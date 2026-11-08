@@ -1,0 +1,27 @@
+{
+  "place_id": 423643883,
+  "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+  "osm_type": "node",
+  "osm_id": 14024128801,
+  "lat": "10.2927429",
+  "lon": "123.9060051",
+  "category": "amenity",
+  "type": "bench",
+  "place_rank": 30,
+  "importance": 0.00006237811856255464,
+  "addresstype": "amenity",
+  "name": "",
+  "display_name": "A. Pigafetta Street, San Roque, Carreta, Cebu City, Central Visayas, 6000, Philippines",
+  "address": {
+    "road": "A. Pigafetta Street",
+    "quarter": "San Roque",
+    "suburb": "Carreta",
+    "city": "Cebu City",
+    "region": "Central Visayas",
+    "ISO3166-2-lvl3": "PH-07",
+    "postcode": "6000",
+    "country": "Philippines",
+    "country_code": "ph"
+  },
+  "boundingbox": ["10.2926929", "10.2927929", "123.9059551", "123.9060551"]
+}

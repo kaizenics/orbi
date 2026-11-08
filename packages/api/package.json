@@ -15,8 +15,12 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@hono/zod-validator": "0.9.1",
     "@orbi/core": "workspace:*",
-    "hono": "catalog:"
+    "@orbi/db": "workspace:*",
+    "@orbi/geo": "workspace:*",
+    "hono": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@orbi/eslint-config": "workspace:*",

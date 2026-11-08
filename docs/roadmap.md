@@ -28,7 +28,7 @@ Phases 3 and 4 overlap in practice (map and itinerary are one experience); they 
 - [x] Stack compatibility evaluated with current versions; risks and costs classified.
 - [x] Monorepo structure, DB schema, API boundaries, AI and geo abstractions defined.
 - [x] Owner answered decisions 1–5 on 2026-11-08 (technical-decisions.md §5). Decision 6 (AI hardware, TD-21) is open but does not block Phases 1–4.
-- [ ] Owner approves the start of Phase 1.
+- [x] Owner approves the start of Phase 1.
 
 ---
 
@@ -50,13 +50,13 @@ Phases 3 and 4 overlap in practice (map and itinerary are one experience); they 
 
 **Acceptance criteria**
 
-- [ ] `pnpm install` succeeds from a clean clone on Windows (and is documented for macOS/Linux).
-- [ ] `pnpm dev` starts web (`:3000`) and server (`:3100`); `GET /health` returns 200; the web shell renders a value imported from `@orbi/core`.
-- [ ] Android development build installs and launches on an emulator or device, renders a value from `@orbi/core`, and calls `/health` on the LAN server.
-- [ ] `pnpm lint`, `pnpm check-types`, `pnpm test` pass with zero warnings.
-- [ ] Importing `@orbi/db` from `apps/web` or `apps/mobile` fails the Boundaries check.
-- [ ] No secrets, DB files or `.env` files tracked (`git ls-files` reviewed).
-- [ ] Licence check lists no unknown/proprietary licences.
+- [x] `pnpm install` succeeds from a clean clone on Windows (and is documented for macOS/Linux).
+- [x] `pnpm dev` starts web (`:3000`) and server (`:3100`); `GET /health` returns 200; the web shell renders a value imported from `@orbi/core`.
+- [ ] Android development build installs and launches on an emulator or device, renders a value from `@orbi/core`, and calls `/health` on the LAN server. **Blocked (2026-11-09):** the native C++ build fails because CMake 3.22.1's bundled ninja 1.10.2 cannot handle Windows paths over 260 characters; JS bundle verified with `expo export`. Needs a newer SDK CMake, a shorter repo path, or a newer ninja.
+- [x] `pnpm lint`, `pnpm check-types`, `pnpm test` pass with zero warnings.
+- [x] Importing `@orbi/db` from `apps/web` or `apps/mobile` fails the Boundaries check.
+- [x] No secrets, DB files or `.env` files tracked (`git ls-files` reviewed).
+- [x] Licence check lists no unknown/proprietary licences.
 
 ---
 
@@ -73,14 +73,14 @@ Phases 3 and 4 overlap in practice (map and itinerary are one experience); they 
 
 **Acceptance criteria**
 
-- [ ] Migrations apply to an empty DB and are idempotent on restart; generated SQL committed.
-- [ ] Integration tests (in-memory SQLite) cover every route: happy path, validation error (400 problem+json), not found (404), revision conflict (409).
-- [ ] Reorder and move keep positions contiguous and unique (property-style test with random sequences).
-- [ ] Deleting a trip removes all dependent rows; deleting a destination removes its items and re-packs positions (tested).
-- [ ] Changing trip dates adds/removes days correctly; removing a day with items requires confirmation flag.
-- [ ] Export → import round-trips a trip byte-for-byte equivalent (excluding IDs/timestamps).
-- [ ] Web and mobile list and open the seeded trip through the typed client (types flow end to end; a deliberate schema change produces a compile error in the apps).
-- [ ] Server refuses to start bound to `0.0.0.0` without `ORBI_API_TOKEN`.
+- [x] Migrations apply to an empty DB and are idempotent on restart; generated SQL committed.
+- [x] Integration tests (in-memory SQLite) cover every route: happy path, validation error (400 problem+json), not found (404), revision conflict (409).
+- [x] Reorder and move keep positions contiguous and unique (property-style test with random sequences).
+- [x] Deleting a trip removes all dependent rows; deleting a destination removes its items and re-packs positions (tested).
+- [x] Changing trip dates adds/removes days correctly; removing a day with items requires confirmation flag.
+- [x] Export → import round-trips a trip byte-for-byte equivalent (excluding IDs/timestamps).
+- [x] Web and mobile list and open the seeded trip through the typed client (types flow end to end; a deliberate schema change produces a compile error in the apps).
+- [x] Server refuses to start bound to `0.0.0.0` without `ORBI_API_TOKEN`.
 
 ---
 
@@ -97,14 +97,14 @@ Phases 3 and 4 overlap in practice (map and itinerary are one experience); they 
 
 **Acceptance criteria**
 
-- [ ] Searching “Magellan's Cross Cebu” returns candidates; adding one stores provider coordinates and `source_ref`; the same search repeated within TTL makes **zero** provider calls (verified by log/counter).
-- [ ] Provider calls never exceed 1 req/s under a burst of 10 searches (unit test on the limiter + manual log check).
-- [ ] A day with 5 stops renders 5 numbered markers and road-following geometry on web and Android.
-- [ ] Reordering one stop triggers at most one provider request; unchanged legs come from cache.
-- [ ] With routing disabled/unreachable, legs render dashed with a “straight line — not a road route” label and no duration; the app stays usable.
-- [ ] Switching `MAP_STYLE_URL` changes tiles in both apps without rebuilding the mobile app.
-- [ ] OSM and tile attribution visible on both platforms.
-- [ ] Walking vs driving produce different durations for the same day.
+- [x] Searching “Magellan's Cross Cebu” returns candidates; adding one stores provider coordinates and `source_ref`; the same search repeated within TTL makes **zero** provider calls (verified by log/counter).
+- [x] Provider calls never exceed 1 req/s under a burst of 10 searches (unit test on the limiter + manual log check).
+- [ ] A day with 5 stops renders 5 numbered markers and road-following geometry on web and Android. _(Web verified in Edge with live OpenFreeMap tiles and OSRM geometry; Android code written and bundled, not yet run: native build blocked.)_
+- [x] Reordering one stop triggers at most one provider request; unchanged legs come from cache.
+- [ ] With routing disabled/unreachable, legs render dashed with a “straight line — not a road route” label and no duration; the app stays usable. _(Web verified by simulating an outage; server behaviour covered by tests.)_
+- [ ] Switching `MAP_STYLE_URL` changes tiles in both apps without rebuilding the mobile app. _(Both apps read the style URL from `GET /config`; verified on web.)_
+- [ ] OSM and tile attribution visible on both platforms. _(Web verified; Android uses MapLibre Native's attribution control, not yet seen on device.)_
+- [x] Walking vs driving produce different durations for the same day.
 
 ---
 

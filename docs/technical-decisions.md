@@ -239,3 +239,23 @@ Ideas to evaluate in later phases (not committed):
 - Downloadable map tiles for offline use (post-MVP).
 
 Deliberately out of ORBI's MVP scope (TREK has these): multi-user collaboration and real-time sync, bookings, packing lists, journaling, plugins, hosted-AI-only assistants.
+
+## 7. Implementation notes (Phases 2–3, 2026-11-09)
+
+- **TD-05 resolved:** Drizzle ORM **0.45.4** (stable) + **better-sqlite3 13.0.3**. better-sqlite3 13 ships N-API prebuilds for Windows/macOS/Linux inside the package, so no C++ toolchain is needed; its install script is disabled in `pnpm-workspace.yaml` (`allowBuilds`). Drizzle 1.0 was still RC5.
+- **Repositories own transactions.** Every mutation runs in one transaction that checks the optional `If-Match` revision and bumps `trips.revision`. API routes call repositories directly; services exist only where providers are orchestrated (places, routing).
+- **Web data:** TanStack Query over the typed Hono client. `unwrap()` (in `@orbi/api/client`) turns problem+json responses into `ApiError` and narrows the success type.
+- **Web proxy:** Next.js 16 `proxy.ts` forwards `/api/*` to the server and adds `ORBI_API_TOKEN` server-side, so the token never reaches the browser.
+- **Web map:** `@vis.gl/react-maplibre` 8 (the MapLibre-only build of react-map-gl) + `maplibre-gl` 6. MapLibre 6 locates its web worker relative to its own module URL, which breaks once Turbopack bundles it; `app/vendor/maplibre-gl-worker.mjs/route.ts` serves the worker from the installed package and the map calls `setWorkerUrl()`.
+- **Shared map data:** `buildMapFeatures()` in `@orbi/geo/utils` produces the GeoJSON for both apps; markers and numbers are map layers (circle + symbol, font "Noto Sans Bold" from the OpenFreeMap glyphs), not DOM views.
+- **Route caching as designed:** legs keyed by provider, mode and coordinates rounded to 5 decimals; a cache miss fetches each run of consecutive uncached same-mode legs in one OSRM request. Verified live: a reorder or added stop triggers one request covering only the new legs.
+- **Unrouted legs never show invented numbers:** totals exclude them, and the UI says "No road route available" when no leg has road data (`formatRouteTotals`).
+- **Mobile map:** `@maplibre/maplibre-react-native` 11.5.1 (config plugin registered). Written and bundled, but not yet run on a device because the Android native build is blocked (see roadmap, Phase 1).
+- **Demo data provenance:** seed coordinates were fetched once from public Nominatim (1 req/s, identifying User-Agent) and stored with their OSM references; nothing is hand-typed.
+
+### Security notes (2026-11-09, from an automated review of the Phase 2–3 commits)
+
+- **Web proxy path escape (fixed):** the `/api` proxy now builds the upstream URL on the fixed API origin and rejects `//` or `\` paths, so the bearer token can never be sent to another host.
+- **Unauthenticated web gateway (fixed):** the web app has no login (single-user MVP) while its proxy adds the API token, so `next dev`/`next start` now listen on `127.0.0.1` only. Exposing the web app on a network would publish the API without authentication; a real login is needed first (multi-user work, post-MVP).
+- **Import limits (fixed):** trip files are capped by the schema (60 days, 40 stops per day, 500 places); import rebuilds day numbers and dates from the trip and reports duplicates as validation errors.
+- **Token in the mobile bundle (accepted for now):** `EXPO_PUBLIC_API_TOKEN` is compiled into the APK, so anyone holding the APK can extract it. This is acceptable only for a personal, sideloaded build that never leaves the owner's devices. Phase 6 replaces it with a token entered at runtime and stored in `expo-secure-store`; if the APK is shared, rotate `ORBI_API_TOKEN`.

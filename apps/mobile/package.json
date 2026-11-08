@@ -11,9 +11,12 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
+    "@maplibre/maplibre-react-native": "11.5.1",
     "@orbi/api": "workspace:*",
     "@orbi/core": "workspace:*",
+    "@orbi/geo": "workspace:*",
     "@orbi/theme": "workspace:*",
+    "@tanstack/react-query": "catalog:",
     "expo": "~58.0.23",
     "expo-constants": "~58.0.15",
     "expo-dev-client": "~58.0.18",
