@@ -119,15 +119,17 @@ export const itineraryItemSchema = z.object({
 });
 export type ItineraryItem = z.infer<typeof itineraryItemSchema>;
 
-export const tripDayWithItemsSchema = tripDaySchema.extend({ items: z.array(itineraryItemSchema) });
+export const tripDayWithItemsSchema = tripDaySchema.extend({
+  items: z.array(itineraryItemSchema).max(LIMITS.maxItemsPerDay),
+});
 export type TripDayWithItems = z.infer<typeof tripDayWithItemsSchema>;
 
 /** Everything the planner needs in one response. Days and items are ordered. */
 export const tripAggregateSchema = z.object({
   trip: tripSchema,
   preferences: tripPreferencesSchema,
-  days: z.array(tripDayWithItemsSchema),
-  destinations: z.array(destinationSchema),
+  days: z.array(tripDayWithItemsSchema).max(LIMITS.maxTripDays),
+  destinations: z.array(destinationSchema).max(LIMITS.maxDestinationsPerTrip),
 });
 export type TripAggregate = z.infer<typeof tripAggregateSchema>;
 

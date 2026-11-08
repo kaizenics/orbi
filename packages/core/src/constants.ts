@@ -31,6 +31,7 @@ export const COST_SOURCES = ["user", "ai_estimate"] as const;
 export const LIMITS = {
   maxTripDays: 60,
   maxItemsPerDay: 40,
+  maxDestinationsPerTrip: 500,
   maxNameLength: 120,
   maxTextLength: 4000,
 } as const;

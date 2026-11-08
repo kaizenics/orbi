@@ -203,6 +203,37 @@ describe("destinations and items", () => {
 });
 
 describe("export / import", () => {
+  it("rejects oversized files and rebuilds day numbers and dates", () => {
+    const agg = threeDayTrip();
+    const file = exportTrip(db, agg.trip.id);
+    const tooMany = {
+      ...file,
+      data: { ...file.data, days: Array.from({ length: 61 }, () => file.data.days[0]!) },
+    };
+    expect(tripExportSchema.safeParse(tooMany).success).toBe(false);
+
+    const scrambled = structuredClone(file);
+    scrambled.data.days.forEach((d) => {
+      d.dayIndex = 7;
+      d.date = "1999-01-01";
+    });
+    const copy = importTrip(db, tripExportSchema.parse(scrambled));
+    expect(copy.days.map((d) => [d.dayIndex, d.date])).toEqual([
+      [0, "2026-12-01"],
+      [1, "2026-12-02"],
+      [2, "2026-12-03"],
+    ]);
+
+    const mismatch = structuredClone(file);
+    mismatch.data.days.pop();
+    expectCode(() => importTrip(db, mismatch), "validation");
+
+    createDestination(db, agg.trip.id, place("Fort"));
+    const dup = exportTrip(db, agg.trip.id);
+    dup.data.destinations.push({ ...dup.data.destinations[0]!, id: "0190d8a2-4b7e-7c3f-9a1b-2c3d4e5f6a7b" });
+    expectCode(() => importTrip(db, dup), "validation");
+  });
+
   it("round-trips a trip with fresh IDs", () => {
     const agg = threeDayTrip();
     const hotel = createDestination(db, agg.trip.id, { ...place("Hotel"), dayId: agg.days[0]!.id }).value;
