@@ -4,19 +4,29 @@
   "type": "module",
   "private": true,
   "license": "AGPL-3.0-or-later",
-  "description": "Server-only. Drizzle schema, migrations and repositories (implemented in Phase 2).",
+  "description": "Server-only. Drizzle schema, migrations and repositories for ORBI (SQLite).",
   "exports": {
     ".": "./src/index.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@orbi/eslint-config": "workspace:*",
     "@orbi/typescript-config": "workspace:*",
+    "@types/better-sqlite3": "9.6.0",
     "@types/node": "catalog:",
+    "drizzle-kit": "0.31.11",
     "eslint": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "dependencies": {
+    "@orbi/core": "workspace:*",
+    "better-sqlite3": "13.0.3",
+    "drizzle-orm": "0.45.4"
   }
 }
