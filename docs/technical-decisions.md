@@ -252,3 +252,10 @@ Deliberately out of ORBI's MVP scope (TREK has these): multi-user collaboration 
 - **Unrouted legs never show invented numbers:** totals exclude them, and the UI says "No road route available" when no leg has road data (`formatRouteTotals`).
 - **Mobile map:** `@maplibre/maplibre-react-native` 11.5.1 (config plugin registered). Written and bundled, but not yet run on a device because the Android native build is blocked (see roadmap, Phase 1).
 - **Demo data provenance:** seed coordinates were fetched once from public Nominatim (1 req/s, identifying User-Agent) and stored with their OSM references; nothing is hand-typed.
+
+### Security notes (2026-11-09, from an automated review of the Phase 2–3 commits)
+
+- **Web proxy path escape (fixed):** the `/api` proxy now builds the upstream URL on the fixed API origin and rejects `//` or `\` paths, so the bearer token can never be sent to another host.
+- **Unauthenticated web gateway (fixed):** the web app has no login (single-user MVP) while its proxy adds the API token, so `next dev`/`next start` now listen on `127.0.0.1` only. Exposing the web app on a network would publish the API without authentication; a real login is needed first (multi-user work, post-MVP).
+- **Import limits (fixed):** trip files are capped by the schema (60 days, 40 stops per day, 500 places); import rebuilds day numbers and dates from the trip and reports duplicates as validation errors.
+- **Token in the mobile bundle (accepted for now):** `EXPO_PUBLIC_API_TOKEN` is compiled into the APK, so anyone holding the APK can extract it. This is acceptable only for a personal, sideloaded build that never leaves the owner's devices. Phase 6 replaces it with a token entered at runtime and stored in `expo-secure-store`; if the APK is shared, rotate `ORBI_API_TOKEN`.
