@@ -1,4 +1,4 @@
 {
   "extends": "@orbi/typescript-config/library.json",
-  "include": ["src"]
+  "include": ["src", "test"]
 }
