@@ -1,0 +1,84 @@
+/*
+ * ORBI design tokens (Tailwind CSS v4). Imported by apps/web and apps/mobile (NativeWind v5).
+ * Warm monochrome with a single desaturated blue accent. Variable names follow shadcn/ui
+ * conventions so its components pick them up directly.
+ */
+:root {
+  --background: #fbfbfa;
+  --foreground: #111111;
+  --card: #ffffff;
+  --card-foreground: #111111;
+  --popover: #ffffff;
+  --popover-foreground: #111111;
+  --primary: #111111;
+  --primary-foreground: #ffffff;
+  --secondary: #f7f6f3;
+  --secondary-foreground: #2f3437;
+  --muted: #f7f6f3;
+  --muted-foreground: #787774;
+  --accent: #e1f3fe;
+  --accent-foreground: #1f6c9f;
+  --destructive: #9f2f2d;
+  --border: #eaeaea;
+  --input: #eaeaea;
+  --ring: #1f6c9f;
+  --radius: 0.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #191919;
+    --foreground: #ededec;
+    --card: #202020;
+    --card-foreground: #ededec;
+    --popover: #202020;
+    --popover-foreground: #ededec;
+    --primary: #ededec;
+    --primary-foreground: #191919;
+    --secondary: #2a2a29;
+    --secondary-foreground: #ededec;
+    --muted: #2a2a29;
+    --muted-foreground: #9b9a97;
+    --accent: #1d3a4d;
+    --accent-foreground: #a7d4f2;
+    --destructive: #e57373;
+    --border: #2f2f2e;
+    --input: #2f2f2e;
+    --ring: #6fb3e0;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@theme {
+  --color-day-1: #0072b2;
+  --color-day-2: #d55e00;
+  --color-day-3: #009e73;
+  --color-day-4: #cc79a7;
+  --color-day-5: #e69f00;
+  --color-day-6: #56b4e9;
+  --color-day-7: #2f3437;
+}

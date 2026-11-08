@@ -1,0 +1,29 @@
+{
+  "name": "@orbi/api",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "description": "ORBI HTTP API (Hono). Apps may import only the ./client entry and types.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@orbi/core": "workspace:*",
+    "hono": "catalog:"
+  },
+  "devDependencies": {
+    "@orbi/eslint-config": "workspace:*",
+    "@orbi/typescript-config": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
