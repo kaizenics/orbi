@@ -1,0 +1,10 @@
+pnpm-lock.yaml
+LICENSE
+CODE_OF_CONDUCT.md
+.next
+.expo
+.turbo
+coverage
+dist
+apps/mobile/android
+apps/mobile/ios
