@@ -9,8 +9,9 @@ before anything is saved.
 
 It runs on your own computer and needs no paid accounts or API keys.
 
-> **Status: early development (Phase 1 of 6).** The monorepo foundation is in place; trips, maps and AI
-> are not built yet. See the [roadmap](./docs/roadmap.md).
+> **Status: early development (Phases 1–3 of 6).** Trips, days and destinations are stored and served by
+> the API; the web app shows each day on an interactive map with numbered stops and real road routes, and
+> can search for places and add them. Editing, scheduling and AI come next. See the [roadmap](./docs/roadmap.md).
 
 ## What's in the repository
 
@@ -21,7 +22,8 @@ It runs on your own computer and needs no paid accounts or API keys.
 | `apps/server`    | Node.js process that serves the ORBI API                                                                                                                                                          |
 | `packages/core`  | Shared schemas, types and business logic (pure TypeScript)                                                                                                                                        |
 | `packages/api`   | The HTTP API (Hono), plus a typed client for the apps                                                                                                                                             |
-| `packages/db`    | Database schema and access (SQLite + Drizzle; Phase 2)                                                                                                                                            |
+| `packages/db`    | Database schema, migrations and data access (SQLite + Drizzle)                                                                                                                                    |
+| `packages/geo`   | Geocoding/routing adapters (Nominatim, Photon, OSRM) and shared map utilities                                                                                                                     |
 | `packages/theme` | Design tokens shared by web and mobile                                                                                                                                                            |
 | `docs/`          | [Product requirements](./docs/PRD.md), [architecture](./docs/architecture.md), [database](./docs/database.md), [technical decisions](./docs/technical-decisions.md), [roadmap](./docs/roadmap.md) |
 
@@ -43,7 +45,14 @@ pnpm dev
 - Web app: <http://localhost:3000>
 - API: <http://127.0.0.1:3100/health>
 
-The web app forwards `/api/*` to the server, so the browser only talks to one address.
+Load a demo trip ("3 days in Cebu", with coordinates from OpenStreetMap) and open it in the web app:
+
+```bash
+pnpm --filter @orbi/server db:seed
+```
+
+The web app forwards `/api/*` to the server, so the browser only talks to one address. The server
+stores its database in `apps/server/data/orbi.db` (git-ignored) and migrates it automatically on start.
 Defaults work out of the box. To change them, copy [`.env.example`](./.env.example) values into
 `apps/server/.env` or `apps/web/.env`.
 
@@ -78,15 +87,17 @@ Phase 3) contains native code.
 
 ## Common commands
 
-| Command               | What it does                                                                                 |
-| --------------------- | -------------------------------------------------------------------------------------------- |
-| `pnpm dev`            | Web app + server with live reload                                                            |
-| `pnpm test`           | Unit and integration tests (Vitest)                                                          |
-| `pnpm check-types`    | TypeScript type-check of every package                                                       |
-| `pnpm lint`           | ESLint, zero warnings allowed                                                                |
-| `pnpm boundaries`     | Checks that packages only import what they declare (e.g. the apps can't import the database) |
-| `pnpm format`         | Prettier                                                                                     |
-| `pnpm licenses:check` | Fails if a dependency's licence isn't on the allow-list                                      |
+| Command                              | What it does                                                                                 |
+| ------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `pnpm dev`                           | Web app + server with live reload                                                            |
+| `pnpm test`                          | Unit and integration tests (Vitest)                                                          |
+| `pnpm check-types`                   | TypeScript type-check of every package                                                       |
+| `pnpm lint`                          | ESLint, zero warnings allowed                                                                |
+| `pnpm boundaries`                    | Checks that packages only import what they declare (e.g. the apps can't import the database) |
+| `pnpm --filter @orbi/server db:seed` | Adds the demo trip (skips if it exists)                                                      |
+| `pnpm --filter @orbi/db db:generate` | Generates a SQL migration after a schema change                                              |
+| `pnpm format`                        | Prettier                                                                                     |
+| `pnpm licenses:check`                | Fails if a dependency's licence isn't on the allow-list                                      |
 
 ## Cost
 
