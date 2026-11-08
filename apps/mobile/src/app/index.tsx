@@ -1,50 +1,56 @@
-import { useEffect, useState } from "react";
-import { Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { createOrbiClient } from "@orbi/api/client";
-import { APP_NAME, APP_TAGLINE, healthResponseSchema } from "@orbi/core";
+import { Link } from "expo-router";
+import { FlatList, Pressable, Text, View } from "react-native";
+import { APP_TAGLINE } from "@orbi/core";
+import { Centered, ErrorState, Loading } from "@/components/state";
+import { apiUrl } from "@/lib/api";
+import { formatDate } from "@/lib/format";
+import { useTrips } from "@/lib/queries";
 
-const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+export default function TripsScreen() {
+  const trips = useTrips();
 
-type Status =
-  { state: "checking" } | { state: "online"; version: string } | { state: "offline"; reason: string };
-
-export default function HomeScreen() {
-  const [status, setStatus] = useState<Status>(
-    apiUrl ? { state: "checking" } : { state: "offline", reason: "EXPO_PUBLIC_API_URL is not set" },
-  );
-
-  useEffect(() => {
-    if (!apiUrl) return;
-    let cancelled = false;
-
-    createOrbiClient(apiUrl)
-      .health.$get()
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return healthResponseSchema.parse(await res.json());
-      })
-      .then((health) => !cancelled && setStatus({ state: "online", version: health.version }))
-      .catch((error: unknown) => !cancelled && setStatus({ state: "offline", reason: String(error) }));
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  if (!apiUrl) {
+    return (
+      <Centered>
+        <Text className="text-center text-base text-foreground">
+          Set EXPO_PUBLIC_API_URL in apps/mobile/.env
+        </Text>
+      </Centered>
+    );
+  }
+  if (trips.isPending) return <Loading label="Loading trips…" />;
+  if (trips.isError) return <ErrorState message={trips.error.message} onRetry={() => trips.refetch()} />;
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-1 justify-center gap-2 px-6">
-        <Text className="text-3xl font-semibold text-foreground">{APP_NAME}</Text>
-        <Text className="text-base text-muted-foreground">{APP_TAGLINE}</Text>
-        <Text accessibilityRole="text" className="mt-6 font-mono text-xs text-muted-foreground">
-          {status.state === "online"
-            ? `Server online · v${status.version}`
-            : status.state === "offline"
-              ? `Server offline (${status.reason})`
-              : `Checking ${apiUrl}…`}
-        </Text>
-      </View>
-    </SafeAreaView>
+    <FlatList
+      className="flex-1 bg-background"
+      contentContainerClassName="gap-3 p-4"
+      data={trips.data}
+      keyExtractor={(t) => t.id}
+      refreshing={trips.isRefetching}
+      onRefresh={() => trips.refetch()}
+      ListHeaderComponent={<Text className="pb-1 text-sm text-muted-foreground">{APP_TAGLINE}</Text>}
+      ListEmptyComponent={
+        <Text className="text-base text-foreground">No trips yet. Run pnpm db:seed for a demo trip.</Text>
+      }
+      renderItem={({ item }) => (
+        <Link href={{ pathname: "/trips/[tripId]", params: { tripId: item.id } }} asChild>
+          <Pressable accessibilityRole="button" className="gap-1 rounded-lg border border-border bg-card p-4">
+            <Text className="text-base font-semibold text-foreground">{item.name}</Text>
+            <View className="flex-row flex-wrap gap-x-3">
+              {item.regionName ? (
+                <Text className="text-sm text-muted-foreground">{item.regionName}</Text>
+              ) : null}
+              <Text className="text-sm text-muted-foreground">
+                {item.startDate
+                  ? `${formatDate(item.startDate)} – ${formatDate(item.endDate)}`
+                  : `${item.dayCount} days`}
+              </Text>
+              <Text className="text-sm text-muted-foreground">{item.destinationCount} places</Text>
+            </View>
+          </Pressable>
+        </Link>
+      )}
+    />
   );
 }
