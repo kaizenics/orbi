@@ -1,0 +1,28 @@
+{
+  "name": "@orbi/server",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "description": "ORBI server process: validates env and serves @orbi/api on Node.js.",
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env --watch src/main.ts",
+    "start": "node --env-file-if-exists=.env src/main.ts",
+    "lint": "eslint . --max-warnings 0",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@hono/node-server": "2.1.6",
+    "@orbi/api": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@orbi/eslint-config": "workspace:*",
+    "@orbi/typescript-config": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
