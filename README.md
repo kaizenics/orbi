@@ -1,159 +1,103 @@
-# Turborepo starter
+# ORBI
 
-This Turborepo starter is maintained by the Turborepo core team.
+**Explore more. Plan smarter.**
 
-## Using this example
+ORBI is an open-source, self-hostable travel itinerary planner with a map-first design. You plan trips
+day by day and see every stop as a numbered marker on a map, connected by real road routes. A local AI
+(through [Ollama](https://ollama.com)) can draft and edit itineraries, and you review its suggestions
+before anything is saved.
 
-Run the following command:
+It runs on your own computer and needs no paid accounts or API keys.
 
-```sh
-npx create-turbo@latest
+> **Status: early development (Phase 1 of 6).** The monorepo foundation is in place; trips, maps and AI
+> are not built yet. See the [roadmap](./docs/roadmap.md).
+
+## What's in the repository
+
+| Path             | What it is                                                                                                                                                                                        |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web`       | Next.js web app (planner UI)                                                                                                                                                                      |
+| `apps/mobile`    | Expo / React Native Android app (iOS later)                                                                                                                                                       |
+| `apps/server`    | Node.js process that serves the ORBI API                                                                                                                                                          |
+| `packages/core`  | Shared schemas, types and business logic (pure TypeScript)                                                                                                                                        |
+| `packages/api`   | The HTTP API (Hono), plus a typed client for the apps                                                                                                                                             |
+| `packages/db`    | Database schema and access (SQLite + Drizzle; Phase 2)                                                                                                                                            |
+| `packages/theme` | Design tokens shared by web and mobile                                                                                                                                                            |
+| `docs/`          | [Product requirements](./docs/PRD.md), [architecture](./docs/architecture.md), [database](./docs/database.md), [technical decisions](./docs/technical-decisions.md), [roadmap](./docs/roadmap.md) |
+
+## Requirements
+
+- **Node.js 26** (see `.nvmrc`). With nvm: `nvm install 26 && nvm use 26`
+- **pnpm 11**: `npm install -g pnpm@11`
+- For the Android app: **Android Studio** (it provides the Android SDK, an emulator and a JDK)
+
+## Quick start (web + server)
+
+```bash
+git clone <this repository> orbi
+cd orbi
+pnpm install
+pnpm dev
 ```
 
-## What's inside?
+- Web app: <http://localhost:3000>
+- API: <http://127.0.0.1:3100/health>
 
-This Turborepo includes the following packages/apps:
+The web app forwards `/api/*` to the server, so the browser only talks to one address.
+Defaults work out of the box. To change them, copy [`.env.example`](./.env.example) values into
+`apps/server/.env` or `apps/web/.env`.
 
-### Apps and Packages
+## Android app
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `@next/eslint-plugin-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+The Android app needs a **development build**. Expo Go isn't enough, because the map library (added in
+Phase 3) contains native code.
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+1. Point the shell at Android Studio's tools (PowerShell example; adjust the paths on macOS/Linux):
 
-### Utilities
+   ```powershell
+   $env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
+   $env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
+   ```
 
-This Turborepo has some additional tools already setup for you:
+2. Tell the app where the server is:
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+   ```bash
+   cp apps/mobile/.env.example apps/mobile/.env
+   ```
 
-### Build
+   On the Android emulator use `EXPO_PUBLIC_API_URL=http://10.0.2.2:3100` (the emulator's name for your computer).
+   On a real phone, use your computer's LAN IP and start the server with `ORBI_HOST=0.0.0.0`.
 
-To build all apps and packages, run the following command:
+3. Start an emulator (or connect a phone with USB debugging), then build and install:
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+   ```bash
+   pnpm --filter mobile android
+   ```
 
-```sh
-cd my-turborepo
-turbo build
-```
+   The first build takes a while. Afterwards, `pnpm dev:mobile` starts Metro for the installed app.
 
-Without global `turbo`, use your package manager:
+## Common commands
 
-```sh
-cd my-turborepo
-npx turbo build
-pnpm exec turbo build
-pnpm exec turbo build
-```
+| Command               | What it does                                                                                 |
+| --------------------- | -------------------------------------------------------------------------------------------- |
+| `pnpm dev`            | Web app + server with live reload                                                            |
+| `pnpm test`           | Unit and integration tests (Vitest)                                                          |
+| `pnpm check-types`    | TypeScript type-check of every package                                                       |
+| `pnpm lint`           | ESLint, zero warnings allowed                                                                |
+| `pnpm boundaries`     | Checks that packages only import what they declare (e.g. the apps can't import the database) |
+| `pnpm format`         | Prettier                                                                                     |
+| `pnpm licenses:check` | Fails if a dependency's licence isn't on the allow-list                                      |
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+## Cost
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+ORBI's own software and every default service cost nothing. Some defaults are free _public_ services with
+fair-use limits (map tiles, geocoding, routing); ORBI caches and rate-limits its requests to them, and they
+can all be swapped for self-hosted ones. See [technical decisions §3](./docs/technical-decisions.md#3-cost-classification-0-requirement).
 
-```sh
-turbo build --filter=docs
-```
+## Contributing
 
-Without global `turbo`:
+See [CONTRIBUTING.md](./CONTRIBUTING.md) and the [Code of Conduct](./CODE_OF_CONDUCT.md).
 
-```sh
-npx turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
+## License
 
-### Develop
-
-To develop all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo dev
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo dev
-pnpm exec turbo dev
-pnpm exec turbo dev
-```
-
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo dev --filter=web
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo login
-pnpm exec turbo login
-pnpm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-pnpm exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+[AGPL-3.0-or-later](./LICENSE). Map data © OpenStreetMap contributors; see [ATTRIBUTIONS.md](./ATTRIBUTIONS.md).
