@@ -1,0 +1,76 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "W",
+        "osm_id": 332819231,
+        "osm_key": "tourism",
+        "osm_value": "attraction",
+        "type": "house",
+        "name": "Fort San Pedro",
+        "street": "A. Pigafetta Street",
+        "locality": "San Roque",
+        "district": "Carreta",
+        "city": "Cebu",
+        "state": "Central Visayas",
+        "country": "Philippines",
+        "postcode": "6000",
+        "countrycode": "PH",
+        "extent": [123.9052969, 10.2931986, 123.9062811, 10.2920287]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [123.9058911, 10.2927283]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "R",
+        "osm_id": 4674040,
+        "osm_key": "building",
+        "osm_value": "yes",
+        "type": "house",
+        "name": "Fort San Pedro",
+        "street": "Cebu South Coastal Road",
+        "locality": "San Roque",
+        "district": "Carreta",
+        "city": "Cebu City",
+        "state": "Central Visayas",
+        "country": "Philippines",
+        "postcode": "6000",
+        "countrycode": "PH",
+        "extent": [123.9052969, 10.2931986, 123.9062811, 10.2920287]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [123.9057119, 10.2926178]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "osm_type": "W",
+        "osm_id": 1364913833,
+        "osm_key": "landuse",
+        "osm_value": "construction",
+        "type": "other",
+        "name": "Fort San Pedro Restoration",
+        "locality": "Santo Rosario-Duran",
+        "district": "City Proper",
+        "city": "Iloilo City",
+        "state": "Western Visayas",
+        "country": "Philippines",
+        "postcode": "5000",
+        "countrycode": "PH",
+        "extent": [122.5794445, 10.6883469, 122.5806158, 10.6873625]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [122.5800257, 10.6879072]
+      }
+    }
+  ]
+}

@@ -1,0 +1,829 @@
+{
+  "code": "Ok",
+  "routes": [
+    {
+      "legs": [
+        {
+          "steps": [
+            {
+              "intersections": [
+                {
+                  "out": 0,
+                  "entry": [true],
+                  "bearings": [109],
+                  "location": [123.901987, 10.293648]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "_xgsReakikFH]^i@j@]p@Qr@?p@L",
+              "maneuver": {
+                "bearing_after": 109,
+                "bearing_before": 0,
+                "location": [123.901987, 10.293648],
+                "modifier": "right",
+                "type": "depart"
+              },
+              "name": "",
+              "mode": "walking",
+              "weight": 1.34,
+              "duration": 12.8,
+              "distance": 16.3
+            },
+            {
+              "intersections": [
+                {
+                  "out": 1,
+                  "in": 0,
+                  "entry": [false, true, true],
+                  "bearings": [0, 105, 240],
+                  "location": [123.90204, 10.293529]
+                },
+                {
+                  "out": 0,
+                  "in": 2,
+                  "entry": [true, true, false],
+                  "bearings": [105, 180, 285],
+                  "location": [123.90223, 10.293453]
+                },
+                {
+                  "out": 1,
+                  "in": 2,
+                  "entry": [true, true, false],
+                  "bearings": [15, 105, 285],
+                  "location": [123.902428, 10.293374]
+                },
+                {
+                  "out": 1,
+                  "in": 3,
+                  "entry": [true, true, true, false],
+                  "bearings": [45, 120, 210, 285],
+                  "location": [123.902474, 10.293356]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "qpgsRodkikFvC{J|CkKb@{ABIJc@`A{C",
+              "maneuver": {
+                "bearing_after": 111,
+                "bearing_before": 172,
+                "location": [123.90204, 10.293529],
+                "modifier": "left",
+                "type": "turn"
+              },
+              "name": "",
+              "mode": "walking",
+              "weight": 5.26,
+              "duration": 50.6,
+              "distance": 63.2
+            },
+            {
+              "intersections": [
+                {
+                  "out": 0,
+                  "in": 2,
+                  "entry": [true, true, false],
+                  "bearings": [30, 210, 300],
+                  "location": [123.902575, 10.293315]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "ecgsR}elikFyAu@",
+              "maneuver": {
+                "bearing_after": 29,
+                "bearing_before": 112,
+                "location": [123.902575, 10.293315],
+                "modifier": "left",
+                "type": "end of road"
+              },
+              "name": "P. Burgos Street",
+              "mode": "walking",
+              "weight": 0.64,
+              "duration": 4.6,
+              "distance": 5.8
+            },
+            {
+              "intersections": [
+                {
+                  "out": 1,
+                  "in": 2,
+                  "entry": [true, true, false],
+                  "bearings": [30, 105, 210],
+                  "location": [123.902602, 10.29336]
+                },
+                {
+                  "out": 1,
+                  "in": 3,
+                  "entry": [true, true, true, false],
+                  "bearings": [30, 105, 210, 285],
+                  "location": [123.903357, 10.293072]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "_fgsRsglikF`AyCfBkG`Ju\\r@iCr@gCpJg]",
+              "maneuver": {
+                "bearing_after": 111,
+                "bearing_before": 29,
+                "location": [123.902602, 10.29336],
+                "modifier": "right",
+                "type": "turn"
+              },
+              "name": "Magallanes Street",
+              "mode": "walking",
+              "weight": 17.05,
+              "duration": 122.9,
+              "distance": 153.5
+            },
+            {
+              "intersections": [
+                {
+                  "out": 0,
+                  "in": 2,
+                  "entry": [true, true, false],
+                  "bearings": [30, 120, 285],
+                  "location": [123.903909, 10.292861]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "yffsRiynikFeYeLwB{@dCmGzBeG",
+              "maneuver": {
+                "bearing_after": 25,
+                "bearing_before": 111,
+                "location": [123.903909, 10.292861],
+                "modifier": "left",
+                "type": "turn"
+              },
+              "name": "",
+              "mode": "walking",
+              "weight": 9.16,
+              "duration": 73.2,
+              "distance": 91.6
+            },
+            {
+              "intersections": [
+                {
+                  "out": 0,
+                  "in": 2,
+                  "entry": [true, true, false],
+                  "bearings": [30, 210, 300],
+                  "location": [123.904416, 10.293211]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "u|fsR_yoikF_M{EqEgB",
+              "maneuver": {
+                "bearing_after": 25,
+                "bearing_before": 113,
+                "location": [123.904416, 10.293211],
+                "modifier": "left",
+                "type": "turn"
+              },
+              "name": "M.J. Cuenco Avenue",
+              "mode": "walking",
+              "weight": 5.06,
+              "duration": 34.3,
+              "distance": 40.5
+            },
+            {
+              "intersections": [
+                {
+                  "out": 1,
+                  "in": 2,
+                  "entry": [true, true, false, true],
+                  "bearings": [30, 120, 210, 300],
+                  "location": [123.904578, 10.29354]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "gqgsRccpikFlBuD",
+              "maneuver": {
+                "bearing_after": 120,
+                "bearing_before": 25,
+                "location": [123.904578, 10.29354],
+                "modifier": "right",
+                "type": "turn"
+              },
+              "name": "",
+              "mode": "walking",
+              "weight": 1.95,
+              "duration": 2.1,
+              "distance": 11.7
+            },
+            {
+              "intersections": [
+                {
+                  "out": 1,
+                  "in": 2,
+                  "entry": [true, true, false],
+                  "bearings": [105, 210, 300],
+                  "location": [123.904669, 10.293485]
+                },
+                {
+                  "out": 0,
+                  "in": 2,
+                  "entry": [true, true, false],
+                  "bearings": [105, 210, 285],
+                  "location": [123.904663, 10.293328]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "ymgsRyhpikF~H|CEqC^{B",
+              "maneuver": {
+                "bearing_after": 205,
+                "bearing_before": 120,
+                "location": [123.904669, 10.293485],
+                "modifier": "right",
+                "type": "turn"
+              },
+              "name": "",
+              "mode": "walking",
+              "weight": 2.89,
+              "duration": 27.8,
+              "distance": 34.7
+            },
+            {
+              "intersections": [
+                {
+                  "out": 0,
+                  "in": 3,
+                  "entry": [true, true, true, false],
+                  "bearings": [138, 140, 209, 285],
+                  "location": [123.904725, 10.293312]
+                },
+                {
+                  "out": 0,
+                  "in": 1,
+                  "entry": [true, true],
+                  "bearings": [135, 315],
+                  "location": [123.904974, 10.293039]
+                },
+                {
+                  "out": 0,
+                  "in": 2,
+                  "entry": [true, true, false],
+                  "bearings": [90, 240, 315],
+                  "location": [123.905221, 10.292778]
+                },
+                {
+                  "out": 1,
+                  "in": 3,
+                  "entry": [true, true, true, false],
+                  "bearings": [30, 120, 210, 300],
+                  "location": [123.905415, 10.292749]
+                },
+                {
+                  "out": 1,
+                  "in": 3,
+                  "entry": [true, true, true, false],
+                  "bearings": [30, 135, 210, 300],
+                  "location": [123.90546, 10.292719]
+                },
+                {
+                  "out": 1,
+                  "in": 3,
+                  "entry": [true, true, true, false],
+                  "bearings": [45, 120, 225, 315],
+                  "location": [123.905646, 10.29257]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "_cgsRilpikF`PqNQUv@s@PTxHkHvCmCNgEg@UpAeDz@yA`G}Hf@u@dCwDZa@",
+              "maneuver": {
+                "bearing_after": 137,
+                "bearing_before": 104,
+                "location": [123.904725, 10.293312],
+                "modifier": "slight left",
+                "type": "fork"
+              },
+              "name": "",
+              "mode": "walking",
+              "weight": 12.85,
+              "duration": 123.5,
+              "distance": 154.1
+            },
+            {
+              "intersections": [
+                {
+                  "out": 0,
+                  "in": 3,
+                  "entry": [true, true, true, false],
+                  "bearings": [45, 135, 225, 300],
+                  "location": [123.905755, 10.292489]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "qoesRulrikF_EaDmA|A{E}D",
+              "maneuver": {
+                "bearing_after": 39,
+                "bearing_before": 126,
+                "location": [123.905755, 10.292489],
+                "modifier": "left",
+                "type": "turn"
+              },
+              "name": "",
+              "mode": "walking",
+              "weight": 3.04,
+              "duration": 29.2,
+              "distance": 36.6
+            },
+            {
+              "intersections": [
+                {
+                  "in": 0,
+                  "entry": [true],
+                  "bearings": [221],
+                  "location": [123.905884, 10.292734]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "{~esRwtrikF",
+              "maneuver": {
+                "bearing_after": 0,
+                "bearing_before": 41,
+                "location": [123.905884, 10.292734],
+                "type": "arrive"
+              },
+              "name": "",
+              "mode": "walking",
+              "weight": 0,
+              "duration": 0,
+              "distance": 0
+            }
+          ],
+          "weight": 59.24,
+          "summary": "Magallanes Street, M.J. Cuenco Avenue",
+          "duration": 481,
+          "distance": 607.9
+        },
+        {
+          "steps": [
+            {
+              "intersections": [
+                {
+                  "out": 0,
+                  "entry": [true],
+                  "bearings": [221],
+                  "location": [123.905884, 10.292734]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "{~esRwtrikFzE|DlA}A~D`D",
+              "maneuver": {
+                "bearing_after": 221,
+                "bearing_before": 0,
+                "location": [123.905884, 10.292734],
+                "type": "depart"
+              },
+              "name": "",
+              "mode": "walking",
+              "weight": 3.04,
+              "duration": 29.2,
+              "distance": 36.6
+            },
+            {
+              "intersections": [
+                {
+                  "out": 3,
+                  "in": 0,
+                  "entry": [false, true, true, true],
+                  "bearings": [45, 135, 225, 300],
+                  "location": [123.905755, 10.292489]
+                },
+                {
+                  "out": 3,
+                  "in": 1,
+                  "entry": [true, false, true, true],
+                  "bearings": [45, 120, 225, 315],
+                  "location": [123.905646, 10.29257]
+                },
+                {
+                  "out": 3,
+                  "in": 1,
+                  "entry": [true, false, true, true],
+                  "bearings": [30, 135, 210, 300],
+                  "location": [123.90546, 10.292719]
+                },
+                {
+                  "out": 3,
+                  "in": 1,
+                  "entry": [true, false, true, true],
+                  "bearings": [30, 120, 210, 300],
+                  "location": [123.905415, 10.292749]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "qoesRulrikF[`@eCvDg@t@aG|H{@xAqAdDf@TOfE",
+              "maneuver": {
+                "bearing_after": 306,
+                "bearing_before": 219,
+                "location": [123.905755, 10.292489],
+                "modifier": "right",
+                "type": "turn"
+              },
+              "name": "",
+              "mode": "walking",
+              "weight": 5.91,
+              "duration": 56.6,
+              "distance": 70.8
+            },
+            {
+              "intersections": [
+                {
+                  "out": 2,
+                  "in": 0,
+                  "entry": [false, true, true],
+                  "bearings": [90, 240, 315],
+                  "location": [123.905221, 10.292778]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "safsRikqikFwClCyHjHQUw@r@PT",
+              "maneuver": {
+                "bearing_after": 316,
+                "bearing_before": 274,
+                "location": [123.905221, 10.292778],
+                "modifier": "right",
+                "type": "turn"
+              },
+              "name": "",
+              "mode": "walking",
+              "weight": 3.55,
+              "duration": 34.3,
+              "distance": 42.7
+            },
+            {
+              "intersections": [
+                {
+                  "out": 1,
+                  "in": 0,
+                  "entry": [false, true],
+                  "bearings": [135, 315],
+                  "location": [123.904974, 10.293039]
+                },
+                {
+                  "out": 3,
+                  "in": 0,
+                  "entry": [false, true, true, true],
+                  "bearings": [138, 140, 209, 285],
+                  "location": [123.904725, 10.293312]
+                },
+                {
+                  "out": 2,
+                  "in": 0,
+                  "entry": [false, true, true],
+                  "bearings": [105, 210, 285],
+                  "location": [123.904663, 10.293328]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "}qfsR{{pikFaPpN_@zBDpC_I}C",
+              "maneuver": {
+                "bearing_after": 317,
+                "bearing_before": 317,
+                "location": [123.904974, 10.293039],
+                "modifier": "slight right",
+                "type": "fork"
+              },
+              "name": "",
+              "mode": "walking",
+              "weight": 6.28,
+              "duration": 60.4,
+              "distance": 75.4
+            },
+            {
+              "intersections": [
+                {
+                  "out": 2,
+                  "in": 1,
+                  "entry": [true, false, true],
+                  "bearings": [105, 210, 300],
+                  "location": [123.904669, 10.293485]
+                },
+                {
+                  "out": 3,
+                  "in": 1,
+                  "entry": [true, false, true, true],
+                  "bearings": [30, 120, 210, 300],
+                  "location": [123.904578, 10.29354]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "ymgsRyhpikFmBtDcBjEeDdJaGlQ",
+              "maneuver": {
+                "bearing_after": 300,
+                "bearing_before": 25,
+                "location": [123.904669, 10.293485],
+                "modifier": "left",
+                "type": "end of road"
+              },
+              "name": "Osmeña Boulevard",
+              "mode": "walking",
+              "weight": 10.64,
+              "duration": 59.7,
+              "distance": 81.1
+            },
+            {
+              "intersections": [
+                {
+                  "out": 2,
+                  "in": 0,
+                  "entry": [false, true, true],
+                  "bearings": [120, 300, 315],
+                  "location": [123.904002, 10.293802]
+                },
+                {
+                  "out": 0,
+                  "in": 1,
+                  "entry": [true, false, true],
+                  "bearings": [30, 180, 210],
+                  "location": [123.903897, 10.294148]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "sahsRc_oikFq@r@a@\\o@f@m@`@o@Xq@Ta@Hu@Lg@Bu@?eACk@Cg@EoAGiWgK",
+              "maneuver": {
+                "bearing_after": 316,
+                "bearing_before": 292,
+                "location": [123.904002, 10.293802],
+                "modifier": "right",
+                "type": "turn"
+              },
+              "name": "Lapu-Lapu Street",
+              "mode": "walking",
+              "weight": 10.64,
+              "duration": 72.6,
+              "distance": 90.4
+            },
+            {
+              "intersections": [
+                {
+                  "out": 3,
+                  "in": 2,
+                  "entry": [true, true, false, true],
+                  "bearings": [30, 120, 210, 300],
+                  "location": [123.904093, 10.294537]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "qoisRydoikF}@zBeMb[eAdCoA~CkAtC",
+              "maneuver": {
+                "bearing_after": 296,
+                "bearing_before": 25,
+                "location": [123.904093, 10.294537],
+                "modifier": "left",
+                "type": "turn"
+              },
+              "name": "Legaspi Street",
+              "mode": "walking",
+              "weight": 10.04,
+              "duration": 72.3,
+              "distance": 90.3
+            },
+            {
+              "intersections": [
+                {
+                  "out": 0,
+                  "in": 1,
+                  "entry": [true, false, true, true],
+                  "bearings": [15, 120, 210, 300],
+                  "location": [123.903359, 10.294908]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "wfjsR}vmikFkMsDiEmAyOmEgA[yE}A",
+              "maneuver": {
+                "bearing_after": 21,
+                "bearing_before": 296,
+                "location": [123.903359, 10.294908],
+                "modifier": "right",
+                "type": "turn"
+              },
+              "name": "P. Burgos Street",
+              "mode": "walking",
+              "weight": 9.83,
+              "duration": 70.8,
+              "distance": 88.4
+            },
+            {
+              "intersections": [
+                {
+                  "out": 0,
+                  "in": 3,
+                  "entry": [true, true, true, false, true],
+                  "bearings": [0, 60, 120, 210, 315],
+                  "location": [123.903652, 10.295653]
+                },
+                {
+                  "out": 0,
+                  "in": 2,
+                  "entry": [true, true, false],
+                  "bearings": [15, 120, 195],
+                  "location": [123.903709, 10.296397]
+                },
+                {
+                  "out": 0,
+                  "in": 2,
+                  "entry": [true, true, false, true],
+                  "bearings": [0, 90, 195, 255],
+                  "location": [123.903819, 10.297203]
+                },
+                {
+                  "out": 2,
+                  "in": 0,
+                  "entry": [false, true, true],
+                  "bearings": [180, 270, 345],
+                  "location": [123.903736, 10.297917]
+                },
+                {
+                  "out": 0,
+                  "in": 1,
+                  "entry": [true, false, true],
+                  "bearings": [0, 165, 255],
+                  "location": [123.903719, 10.298037]
+                },
+                {
+                  "out": 0,
+                  "in": 2,
+                  "entry": [true, true, false],
+                  "bearings": [0, 90, 180],
+                  "location": [123.903702, 10.298205]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "iuksRginikF_DfA{BHoBSca@oDkk@aE_EYiBJoLp@sCPoG^uMt@oF`@oI`@{Lb@",
+              "maneuver": {
+                "bearing_after": 351,
+                "bearing_before": 22,
+                "location": [123.903652, 10.295653],
+                "modifier": "slight left",
+                "type": "new name"
+              },
+              "name": "Mabini Street",
+              "mode": "walking",
+              "weight": 35.27,
+              "duration": 252,
+              "distance": 310.2
+            },
+            {
+              "intersections": [
+                {
+                  "out": 0,
+                  "in": 1,
+                  "entry": [true, false, true],
+                  "bearings": [15, 180, 330],
+                  "location": [123.903684, 10.298427]
+                },
+                {
+                  "out": 0,
+                  "in": 2,
+                  "entry": [true, true, false],
+                  "bearings": [15, 105, 195],
+                  "location": [123.903773, 10.298759]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "ubqsRgknikFoEsAgM}AoLyAcNcB}Nc@",
+              "maneuver": {
+                "bearing_after": 14,
+                "bearing_before": 354,
+                "location": [123.903684, 10.298427],
+                "modifier": "slight right",
+                "type": "fork"
+              },
+              "name": "Mabini Street",
+              "mode": "walking",
+              "weight": 14.77,
+              "duration": 94.5,
+              "distance": 118.1
+            },
+            {
+              "intersections": [
+                {
+                  "out": 0,
+                  "in": 1,
+                  "entry": [true, false, true],
+                  "bearings": [75, 180, 345],
+                  "location": [123.903886, 10.299472]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "_dssR{wnikFmNkeA",
+              "maneuver": {
+                "bearing_after": 77,
+                "bearing_before": 2,
+                "location": [123.903886, 10.299472],
+                "modifier": "right",
+                "type": "turn"
+              },
+              "name": "Eduardo Aboitiz Street",
+              "mode": "walking",
+              "weight": 15.79,
+              "duration": 101.1,
+              "distance": 126.3
+            },
+            {
+              "intersections": [
+                {
+                  "out": 2,
+                  "in": 1,
+                  "entry": [true, false, true],
+                  "bearings": [75, 255, 330],
+                  "location": [123.905012, 10.299719]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "msssRg~pikFqANI@]BL`BeAL",
+              "maneuver": {
+                "bearing_after": 323,
+                "bearing_before": 77,
+                "location": [123.905012, 10.299719],
+                "modifier": "left",
+                "type": "turn"
+              },
+              "name": "",
+              "mode": "walking",
+              "weight": 1.35,
+              "duration": 13,
+              "distance": 16.2
+            },
+            {
+              "intersections": [
+                {
+                  "out": 2,
+                  "in": 0,
+                  "entry": [false, true, true],
+                  "bearings": [120, 255, 345],
+                  "location": [123.904945, 10.299808]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "_yssRazpikFwFl@",
+              "maneuver": {
+                "bearing_after": 348,
+                "bearing_before": 300,
+                "location": [123.904945, 10.299808],
+                "modifier": "right",
+                "type": "turn"
+              },
+              "name": "",
+              "mode": "walking",
+              "weight": 1.16,
+              "duration": 11.2,
+              "distance": 13.9
+            },
+            {
+              "intersections": [
+                {
+                  "in": 0,
+                  "entry": [true],
+                  "bearings": [170],
+                  "location": [123.904922, 10.299932]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "w`tsRsxpikF",
+              "maneuver": {
+                "bearing_after": 0,
+                "bearing_before": 350,
+                "location": [123.904922, 10.299932],
+                "modifier": "left",
+                "type": "arrive"
+              },
+              "name": "",
+              "mode": "walking",
+              "weight": 0,
+              "duration": 0,
+              "distance": 0
+            }
+          ],
+          "weight": 128.27,
+          "summary": "Mabini Street, Eduardo Aboitiz Street",
+          "duration": 927.7,
+          "distance": 1160.5
+        }
+      ],
+      "weight_name": "routability",
+      "weight": 187.51,
+      "duration": 1408.7,
+      "distance": 1768.4
+    }
+  ],
+  "waypoints": [
+    {
+      "hint": "-QYVgv0GFYIOAAAACgAAAHgAAAAAAAAA7OvdPy45lz9qUWhBAAAAAA0AAAAKAAAAcwAAAAAAAAAiAAAAI5hiB5ARnQAGmGIHQhGdAAoAHxIAAAAA",
+      "location": [123.901987, 10.293648],
+      "name": "",
+      "distance": 9.193849875
+    },
+    {
+      "hint": "Tvmlg0_5pYOFAAAAOQAAAKsAAAAAAAAAwhWAQX0t2UBKcKRBAAAAAH8AAAA3AAAApQAAAAAAAAAiAAAAXKdiB_4NnQBjp2IH-A2dAAQAjwIAAAAA",
+      "location": [123.905884, 10.292734],
+      "name": "",
+      "distance": 1.014128523
+    },
+    {
+      "hint": "cohJjHeISYx0AAAALAAAAAAAAAB6AAAAGh9fQT20qEAAAAAADD9qQXAAAAAqAAAAAAAAAHUAAAAiAAAAmqNiBxwqnQA3o2IHCyqdAAAA3xUAAAAA",
+      "location": [123.904922, 10.299932],
+      "name": "",
+      "distance": 11.00685228
+    }
+  ]
+}

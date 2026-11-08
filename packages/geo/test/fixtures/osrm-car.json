@@ -1,0 +1,578 @@
+{
+  "code": "Ok",
+  "routes": [
+    {
+      "legs": [
+        {
+          "steps": [
+            {
+              "intersections": [
+                {
+                  "out": 0,
+                  "entry": [true],
+                  "bearings": [288],
+                  "location": [123.901795, 10.293091]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "eufsReujikF_@bBsK`d@",
+              "maneuver": {
+                "bearing_after": 288,
+                "bearing_before": 0,
+                "location": [123.901795, 10.293091],
+                "modifier": "right",
+                "type": "depart"
+              },
+              "name": "Jose Rizal Street",
+              "mode": "driving",
+              "weight": 41.7,
+              "duration": 23.8,
+              "distance": 74.5
+            },
+            {
+              "intersections": [
+                {
+                  "out": 2,
+                  "in": 1,
+                  "entry": [true, false, true],
+                  "bearings": [15, 105, 195],
+                  "location": [123.901152, 10.293309]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "ybgsR_miikF`NxBpFp@tGf@lGArIiAlG_A",
+              "maneuver": {
+                "bearing_after": 194,
+                "bearing_before": 288,
+                "location": [123.901152, 10.293309],
+                "modifier": "left",
+                "type": "turn"
+              },
+              "name": "Dionisio Jakosalem Street",
+              "mode": "driving",
+              "weight": 17.4,
+              "duration": 17.4,
+              "distance": 106.2
+            },
+            {
+              "intersections": [
+                {
+                  "out": 0,
+                  "in": 3,
+                  "entry": [true, true, true, false],
+                  "bearings": [75, 165, 255, 345],
+                  "location": [123.901116, 10.292368]
+                },
+                {
+                  "out": 0,
+                  "in": 2,
+                  "entry": [true, true, false],
+                  "bearings": [75, 120, 255],
+                  "location": [123.90201, 10.292588]
+                },
+                {
+                  "out": 1,
+                  "in": 3,
+                  "entry": [false, true, true, false],
+                  "bearings": [30, 105, 210, 255],
+                  "location": [123.902249, 10.292649]
+                },
+                {
+                  "out": 1,
+                  "in": 3,
+                  "entry": [true, true, false, false],
+                  "bearings": [15, 120, 195, 285],
+                  "location": [123.903044, 10.292353]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "_hesRwjiikF}@qFaEqWqDoUEg@_A{Fy@aFNeDbOsf@z@{CbAgClO{g@xAyE",
+              "maneuver": {
+                "bearing_after": 74,
+                "bearing_before": 167,
+                "location": [123.901116, 10.292368],
+                "modifier": "left",
+                "type": "turn"
+              },
+              "name": "M.C. Briones Street",
+              "mode": "driving",
+              "weight": 42.4,
+              "duration": 42.4,
+              "distance": 320
+            },
+            {
+              "intersections": [
+                {
+                  "out": 0,
+                  "in": 2,
+                  "entry": [true, true, false],
+                  "bearings": [15, 210, 285],
+                  "location": [123.903875, 10.292011]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "uqdsRewnikFuDY",
+              "maneuver": {
+                "bearing_after": 7,
+                "bearing_before": 111,
+                "location": [123.903875, 10.292011],
+                "modifier": "left",
+                "type": "end of road"
+              },
+              "name": "M.J. Cuenco Avenue",
+              "mode": "driving",
+              "weight": 4.5,
+              "duration": 4.5,
+              "distance": 10.2
+            },
+            {
+              "intersections": [
+                {
+                  "out": 1,
+                  "in": 2,
+                  "entry": [true, true, false],
+                  "bearings": [30, 105, 195],
+                  "location": [123.903888, 10.292102]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "kwdsR_xnikFhAuEDiABqJP}m@cAsFgBsAuAu@UIQKwAq@qFeCeNoG}E{BiJ}D",
+              "maneuver": {
+                "bearing_after": 108,
+                "bearing_before": 7,
+                "location": [123.903888, 10.292102],
+                "modifier": "right",
+                "type": "turn"
+              },
+              "name": "A. Pigafetta Street",
+              "mode": "driving",
+              "weight": 3333.4,
+              "duration": 56.7,
+              "distance": 236.6
+            },
+            {
+              "intersections": [
+                {
+                  "in": 0,
+                  "entry": [true],
+                  "bearings": [207],
+                  "location": [123.905555, 10.2929]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "gifsRe`rikF",
+              "maneuver": {
+                "bearing_after": 0,
+                "bearing_before": 27,
+                "location": [123.905555, 10.2929],
+                "modifier": "right",
+                "type": "arrive"
+              },
+              "name": "A. Pigafetta Street",
+              "mode": "driving",
+              "weight": 0,
+              "duration": 0,
+              "distance": 0
+            }
+          ],
+          "weight": 3439.4,
+          "summary": "M.C. Briones Street, A. Pigafetta Street",
+          "duration": 144.8,
+          "distance": 747.3
+        },
+        {
+          "steps": [
+            {
+              "intersections": [
+                {
+                  "out": 0,
+                  "entry": [true],
+                  "bearings": [28],
+                  "location": [123.905555, 10.2929]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "gifsRe`rikFuNiGqReIkCiAgLyEuCqA",
+              "maneuver": {
+                "bearing_after": 28,
+                "bearing_before": 0,
+                "location": [123.905555, 10.2929],
+                "modifier": "right",
+                "type": "depart"
+              },
+              "name": "A. Pigafetta Street",
+              "mode": "driving",
+              "weight": 29.7,
+              "duration": 29.7,
+              "distance": 114.8
+            },
+            {
+              "intersections": [
+                {
+                  "out": 0,
+                  "in": 1,
+                  "entry": [true, false, false],
+                  "bearings": [120, 210, 300],
+                  "location": [123.906038, 10.293821]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "ybhsRk~rikFrA{C",
+              "maneuver": {
+                "bearing_after": 118,
+                "bearing_before": 28,
+                "location": [123.906038, 10.293821],
+                "modifier": "right",
+                "type": "turn"
+              },
+              "name": "Legaspi Extension",
+              "mode": "driving",
+              "weight": 6.4,
+              "duration": 6.4,
+              "distance": 9.7
+            },
+            {
+              "intersections": [
+                {
+                  "out": 0,
+                  "in": 2,
+                  "entry": [true, true, false],
+                  "bearings": [30, 120, 300],
+                  "location": [123.906116, 10.293779]
+                },
+                {
+                  "out": 3,
+                  "in": 2,
+                  "entry": [true, false, false, true],
+                  "bearings": [30, 120, 210, 300],
+                  "location": [123.906187, 10.293906]
+                },
+                {
+                  "out": 3,
+                  "in": 1,
+                  "entry": [false, false, true, true],
+                  "bearings": [30, 120, 210, 300],
+                  "location": [123.905955, 10.294034]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "e`hsRgcsikF}FmCqArCmDzHgT~g@yBzF]~@}BtF",
+              "maneuver": {
+                "bearing_after": 28,
+                "bearing_before": 118,
+                "location": [123.906116, 10.293779],
+                "modifier": "uturn",
+                "type": "continue"
+              },
+              "name": "Legaspi Extension",
+              "mode": "driving",
+              "weight": 28.6,
+              "duration": 28.6,
+              "distance": 160.7
+            },
+            {
+              "intersections": [
+                {
+                  "out": 2,
+                  "in": 1,
+                  "entry": [true, false, true],
+                  "bearings": [15, 120, 195],
+                  "location": [123.905018, 10.294513]
+                },
+                {
+                  "out": 2,
+                  "in": 0,
+                  "entry": [false, true, true],
+                  "bearings": [15, 120, 210],
+                  "location": [123.904963, 10.294367]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "anisRs~pikFbHlBbKvD",
+              "maneuver": {
+                "bearing_after": 199,
+                "bearing_before": 295,
+                "location": [123.905018, 10.294513],
+                "modifier": "left",
+                "type": "end of road"
+              },
+              "name": "M.J. Cuenco Avenue",
+              "mode": "driving",
+              "weight": 6.7,
+              "duration": 6.7,
+              "distance": 40.9
+            },
+            {
+              "intersections": [
+                {
+                  "out": 2,
+                  "in": 0,
+                  "entry": [false, true, true],
+                  "bearings": [30, 210, 300],
+                  "location": [123.904871, 10.294173]
+                },
+                {
+                  "out": 3,
+                  "in": 1,
+                  "entry": [true, false, false, true],
+                  "bearings": [30, 120, 210, 300],
+                  "location": [123.904093, 10.294537]
+                },
+                {
+                  "out": 3,
+                  "in": 1,
+                  "entry": [false, false, true, true],
+                  "bearings": [15, 120, 210, 300],
+                  "location": [123.903359, 10.294908]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "yxhsRmupikFaBhE}CtIiK|YmAtC}@zBeMb[eAdCoA~CkAtCoBdFoFxPmGfTg@tA}EhOeHpVe@`B{AvE",
+              "maneuver": {
+                "bearing_after": 295,
+                "bearing_before": 203,
+                "location": [123.904871, 10.294173],
+                "modifier": "right",
+                "type": "turn"
+              },
+              "name": "Legaspi Street",
+              "mode": "driving",
+              "weight": 59.3,
+              "duration": 59.3,
+              "distance": 372
+            },
+            {
+              "intersections": [
+                {
+                  "lanes": [
+                    {
+                      "valid": false,
+                      "indications": ["left"]
+                    },
+                    {
+                      "valid": false,
+                      "indications": ["straight"]
+                    },
+                    {
+                      "valid": true,
+                      "indications": ["straight", "right"]
+                    },
+                    {
+                      "valid": true,
+                      "indications": ["right"]
+                    }
+                  ],
+                  "out": 0,
+                  "in": 1,
+                  "entry": [true, false, true, true],
+                  "bearings": [15, 120, 195, 285],
+                  "location": [123.901781, 10.295562]
+                },
+                {
+                  "out": 0,
+                  "in": 2,
+                  "entry": [true, true, false],
+                  "bearings": [15, 105, 195],
+                  "location": [123.902013, 10.29635]
+                },
+                {
+                  "lanes": [
+                    {
+                      "valid": true,
+                      "indications": ["straight", "left"]
+                    },
+                    {
+                      "valid": true,
+                      "indications": ["straight"]
+                    }
+                  ],
+                  "out": 0,
+                  "in": 2,
+                  "entry": [true, false, false, true],
+                  "bearings": [0, 75, 195, 270],
+                  "location": [123.902148, 10.296909]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "soksRitjikFeEq@}Cw@iE}@y^gHy[qFcE[sEa@uIL{G\\{TlBgFz@",
+              "maneuver": {
+                "bearing_after": 15,
+                "bearing_before": 292,
+                "location": [123.901781, 10.295562],
+                "modifier": "right",
+                "type": "turn"
+              },
+              "name": "Dionisio Jakosalem Street",
+              "mode": "driving",
+              "weight": 34.9,
+              "duration": 34.9,
+              "distance": 253.5
+            },
+            {
+              "intersections": [
+                {
+                  "out": 0,
+                  "in": 1,
+                  "entry": [true, false, true, true],
+                  "bearings": [90, 165, 270, 330],
+                  "location": [123.902058, 10.297794]
+                },
+                {
+                  "out": 1,
+                  "in": 2,
+                  "entry": [true, true, false],
+                  "bearings": [0, 90, 270],
+                  "location": [123.902817, 10.297868]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "c{osRsekikFMeFeCgg@w@oP[iHMs]",
+              "maneuver": {
+                "bearing_after": 84,
+                "bearing_before": 350,
+                "location": [123.902058, 10.297794],
+                "modifier": "right",
+                "type": "turn"
+              },
+              "name": "Colon Street",
+              "mode": "driving",
+              "weight": 28.8,
+              "duration": 28.8,
+              "distance": 184.5
+            },
+            {
+              "intersections": [
+                {
+                  "out": 2,
+                  "in": 1,
+                  "entry": [true, false, true],
+                  "bearings": [180, 270, 345],
+                  "location": [123.903736, 10.297917]
+                },
+                {
+                  "out": 0,
+                  "in": 1,
+                  "entry": [true, false, true],
+                  "bearings": [0, 165, 255],
+                  "location": [123.903719, 10.298037]
+                },
+                {
+                  "out": 0,
+                  "in": 2,
+                  "entry": [true, true, false],
+                  "bearings": [0, 90, 180],
+                  "location": [123.903702, 10.298205]
+                },
+                {
+                  "out": 0,
+                  "in": 1,
+                  "entry": [true, false, false],
+                  "bearings": [15, 180, 330],
+                  "location": [123.903684, 10.298427]
+                },
+                {
+                  "out": 0,
+                  "in": 2,
+                  "entry": [true, true, false],
+                  "bearings": [15, 105, 195],
+                  "location": [123.903773, 10.298759]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "ybpsRonnikFoF`@oI`@{Lb@oEsAgM}AoLyAcNcB}Nc@",
+              "maneuver": {
+                "bearing_after": 351,
+                "bearing_before": 88,
+                "location": [123.903736, 10.297917],
+                "modifier": "left",
+                "type": "end of road"
+              },
+              "name": "Mabini Street",
+              "mode": "driving",
+              "weight": 20.5,
+              "duration": 20.5,
+              "distance": 174.8
+            },
+            {
+              "intersections": [
+                {
+                  "out": 0,
+                  "in": 1,
+                  "entry": [true, false, true],
+                  "bearings": [75, 180, 345],
+                  "location": [123.903886, 10.299472]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "_dssR{wnikFqLw|@",
+              "maneuver": {
+                "bearing_after": 77,
+                "bearing_before": 2,
+                "location": [123.903886, 10.299472],
+                "modifier": "right",
+                "type": "turn"
+              },
+              "name": "Eduardo Aboitiz Street",
+              "mode": "driving",
+              "weight": 12.4,
+              "duration": 12.4,
+              "distance": 110.9
+            },
+            {
+              "intersections": [
+                {
+                  "in": 0,
+                  "entry": [true],
+                  "bearings": [257],
+                  "location": [123.904874, 10.299689]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "qqssRsupikF",
+              "maneuver": {
+                "bearing_after": 0,
+                "bearing_before": 77,
+                "location": [123.904874, 10.299689],
+                "modifier": "left",
+                "type": "arrive"
+              },
+              "name": "Eduardo Aboitiz Street",
+              "mode": "driving",
+              "weight": 0,
+              "duration": 0,
+              "distance": 0
+            }
+          ],
+          "weight": 227.3,
+          "summary": "Legaspi Street, Dionisio Jakosalem Street",
+          "duration": 227.3,
+          "distance": 1421.7
+        }
+      ],
+      "weight_name": "routability",
+      "weight": 3666.7,
+      "duration": 372.1,
+      "distance": 2169
+    }
+  ],
+  "waypoints": [
+    {
+      "hint": "eGghif___3-aAAAAtgAAAAAAAABKAQAAkG8AQg0yuEAAAAAAQGSJQk0AAABbAAAAAAAAAKUAAACUQgAAY5diB2MPnQAGmGIHQhGdAAAADxIAAAAA",
+      "location": [123.901795, 10.293091],
+      "name": "Jose Rizal Street",
+      "distance": 55.91000821
+    },
+    {
+      "hint": "5b13gEytqoI1AAAATAAAAOQAAADIAAAASYK0QYHU-kHI-b1CEuKmQjUAAABMAAAA5AAAAMgAAACUQgAAE6ZiB6QOnQBjp2IH-A2dABIAvwEAAAAA",
+      "location": [123.905555, 10.2929],
+      "name": "A. Pigafetta Street",
+      "distance": 41.43346418
+    },
+    {
+      "hint": "jN1UgP___398AAAAjgAAAAAAAAAKAAAAyLjdQsWid0EAAAAA_mgPQXwAAACOAAAAAAAAAAoAAACUQgAAaqNiBykpnQA3o2IHCyqdAAAA3wQAAAAA",
+      "location": [123.904874, 10.299689],
+      "name": "Eduardo Aboitiz Street",
+      "distance": 25.61447703
+    }
+  ]
+}
