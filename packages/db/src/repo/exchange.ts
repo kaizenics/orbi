@@ -28,7 +28,7 @@ export async function exportTrip(db: Db, tripId: string): Promise<TripExport> {
  * limits are enforced by the schema; day numbers and dates are rebuilt from the trip instead of
  * trusted from the file, and conflicts are reported as validation errors (not database errors).
  */
-export async function importTrip(db: Db, file: TripExport): Promise<TripAggregate> {
+export async function importTrip(db: Db, file: TripExport, owner: string): Promise<TripAggregate> {
   const { trip, preferences, days, destinations: dests } = file.data;
   if (days.length === 0) throw new OrbiError("validation", "A trip file must contain at least one day");
   if (trip.startDate && trip.endDate && daysBetweenInclusive(trip.startDate, trip.endDate) !== days.length) {
@@ -45,7 +45,15 @@ export async function importTrip(db: Db, file: TripExport): Promise<TripAggregat
   await db.transaction(async (tx) => {
     await tx
       .insert(trips)
-      .values({ ...trip, id: tripId, originDestinationId: null, revision: 0, createdAt: t, updatedAt: t })
+      .values({
+        ...trip,
+        id: tripId,
+        owner,
+        originDestinationId: null,
+        revision: 0,
+        createdAt: t,
+        updatedAt: t,
+      })
       .run();
     await tx
       .insert(tripPreferences)

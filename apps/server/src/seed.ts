@@ -5,10 +5,10 @@ import { seedDayModes, seedDayTitles, seedPlaces, seedTrip } from "./seed-data.t
 const env = parseEnv(process.env);
 const { db, close } = await openDb({ url: env.ORBI_DATABASE_URL, authToken: env.ORBI_DATABASE_AUTH_TOKEN });
 
-if ((await listTrips(db)).some((t) => t.name === seedTrip.name)) {
+if ((await listTrips(db, "local")).some((t) => t.name === seedTrip.name)) {
   console.log(`"${seedTrip.name}" already exists; nothing to do.`);
 } else {
-  const trip = await createTrip(db, seedTrip);
+  const trip = await createTrip(db, seedTrip, "local");
   for (const [i, day] of trip.days.entries()) {
     await updateDay(db, day.id, { title: seedDayTitles[i] ?? null, travelMode: seedDayModes[i] ?? null });
   }

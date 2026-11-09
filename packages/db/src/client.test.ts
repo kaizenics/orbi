@@ -24,13 +24,13 @@ describe("openDb", () => {
     const path = join(dir, "orbi.db");
 
     const first = await openDb({ url: `file:${path}` });
-    await createTrip(first.db, { name: "Persisted", dayCount: 1 });
+    await createTrip(first.db, { name: "Persisted", dayCount: 1 }, "local");
     expect(first.backupPath).toBeNull();
     first.close();
 
     const second = await openDb({ url: `file:${path}` });
     expect(second.backupPath).toBeNull();
-    expect((await listTrips(second.db)).map((t) => t.name)).toEqual(["Persisted"]);
+    expect((await listTrips(second.db, "local")).map((t) => t.name)).toEqual(["Persisted"]);
     second.close();
   });
 });

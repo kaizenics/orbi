@@ -16,8 +16,13 @@ import type { Db, DbOrTx } from "../client.ts";
 import { destinations, itineraryItems, tripDays, tripPreferences, trips } from "../schema.ts";
 import { now, toDay, toItem, touchTrip } from "./shared.ts";
 
-export async function listTrips(db: DbOrTx): Promise<TripSummary[]> {
-  const rows = await db.select().from(trips).orderBy(desc(trips.updatedAt)).all();
+export async function listTrips(db: DbOrTx, owner: string): Promise<TripSummary[]> {
+  const rows = await db
+    .select()
+    .from(trips)
+    .where(eq(trips.owner, owner))
+    .orderBy(desc(trips.updatedAt))
+    .all();
   if (rows.length === 0) return [];
   const ids = rows.map((r) => r.id);
   const dayCounts = new Map(
@@ -53,8 +58,10 @@ export async function listTrips(db: DbOrTx): Promise<TripSummary[]> {
 }
 
 export async function getTripAggregate(db: DbOrTx, tripId: string): Promise<TripAggregate> {
-  const trip = await db.select().from(trips).where(eq(trips.id, tripId)).get();
-  if (!trip) throw notFound("Trip", tripId);
+  const row = await db.select().from(trips).where(eq(trips.id, tripId)).get();
+  if (!row) throw notFound("Trip", tripId);
+  // The owner's email stays out of API responses and exported trip files.
+  const { owner: _owner, ...trip } = row;
   const prefs = await db.select().from(tripPreferences).where(eq(tripPreferences.tripId, tripId)).get();
   const days = await db
     .select()
@@ -145,7 +152,7 @@ async function insertDays(
   }
 }
 
-export async function createTrip(db: Db, input: CreateTripInput): Promise<TripAggregate> {
+export async function createTrip(db: Db, input: CreateTripInput, owner: string): Promise<TripAggregate> {
   const id = newId();
   const t = now();
   const startDate = input.startDate ?? null;
@@ -158,6 +165,7 @@ export async function createTrip(db: Db, input: CreateTripInput): Promise<TripAg
       .insert(trips)
       .values({
         id,
+        owner,
         name: input.name,
         description: input.description ?? null,
         regionName: input.regionName ?? null,

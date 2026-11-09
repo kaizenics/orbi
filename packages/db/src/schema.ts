@@ -32,6 +32,8 @@ export const trips = sqliteTable(
   "trips",
   {
     id: text("id").primaryKey(),
+    /** Google account email of the owner; "local" when sign-in is off (local development). */
+    owner: text("owner").notNull().default("local"),
     name: text("name").notNull(),
     description: text("description"),
     // Circular FK (destinations also reference trips); nullable + SET NULL so deletes never block.
@@ -50,7 +52,7 @@ export const trips = sqliteTable(
     ...timestamps,
   },
   (t) => [
-    index("trips_updated_at_idx").on(t.updatedAt),
+    index("trips_owner_updated_at_idx").on(t.owner, t.updatedAt),
     check(
       "trips_dates_check",
       sql`${t.endDate} IS NULL OR ${t.startDate} IS NULL OR ${t.endDate} >= ${t.startDate}`,

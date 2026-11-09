@@ -5,3 +5,4 @@ export * from "./repo/exchange.ts";
 export * from "./repo/itinerary.ts";
 export * from "./repo/proposals.ts";
 export * from "./repo/trips.ts";
+export * from "./repo/owners.ts";

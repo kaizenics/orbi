@@ -28,7 +28,7 @@ const place = (name: string, i = 0): CreateDestinationInput => ({
 });
 
 async function threeDayTrip(): Promise<TripAggregate> {
-  return await createTrip(db, { name: "Cebu", startDate: "2026-12-01", endDate: "2026-12-03" });
+  return await createTrip(db, { name: "Cebu", startDate: "2026-12-01", endDate: "2026-12-03" }, "local");
 }
 
 /** Asserts every day's positions are exactly 0..n-1 in order. */
@@ -55,11 +55,13 @@ describe("trips", () => {
     expect(agg.days.map((d) => d.date)).toEqual(["2026-12-01", "2026-12-02", "2026-12-03"]);
     expect(agg.trip).toMatchObject({ currency: "PHP", timezone: "Asia/Manila", revision: 0 });
     expect(agg.preferences.pace).toBe("moderate");
-    expect(await listTrips(db)).toMatchObject([{ id: agg.trip.id, dayCount: 3, destinationCount: 0 }]);
+    expect(await listTrips(db, "local")).toMatchObject([
+      { id: agg.trip.id, dayCount: 3, destinationCount: 0 },
+    ]);
   });
 
   it("creates undated trips from dayCount", async () => {
-    const agg = await createTrip(db, { name: "Someday", dayCount: 2 });
+    const agg = await createTrip(db, { name: "Someday", dayCount: 2 }, "local");
     expect(agg.days.map((d) => [d.dayIndex, d.date])).toEqual([
       [0, null],
       [1, null],
@@ -132,7 +134,7 @@ describe("destinations and items", () => {
 
   it("refuses to schedule another trip's destination", async () => {
     const a = await threeDayTrip();
-    const b = await createTrip(db, { name: "Other", dayCount: 1 });
+    const b = await createTrip(db, { name: "Other", dayCount: 1 }, "local");
     const foreign = (await createDestination(db, b.trip.id, place("Elsewhere"))).value;
     await expectCode(() => createItem(db, a.days[0]!.id, { destinationId: foreign.id }), "not_found");
   });
@@ -224,7 +226,7 @@ describe("export / import", () => {
       d.dayIndex = 7;
       d.date = "1999-01-01";
     });
-    const copy = await importTrip(db, tripExportSchema.parse(scrambled));
+    const copy = await importTrip(db, tripExportSchema.parse(scrambled), "local");
     expect(copy.days.map((d) => [d.dayIndex, d.date])).toEqual([
       [0, "2026-12-01"],
       [1, "2026-12-02"],
@@ -233,12 +235,12 @@ describe("export / import", () => {
 
     const mismatch = structuredClone(file);
     mismatch.data.days.pop();
-    await expectCode(() => importTrip(db, mismatch), "validation");
+    await expectCode(() => importTrip(db, mismatch, "local"), "validation");
 
     await createDestination(db, agg.trip.id, place("Fort"));
     const dup = await exportTrip(db, agg.trip.id);
     dup.data.destinations.push({ ...dup.data.destinations[0]!, id: "0190d8a2-4b7e-7c3f-9a1b-2c3d4e5f6a7b" });
-    await expectCode(() => importTrip(db, dup), "validation");
+    await expectCode(() => importTrip(db, dup, "local"), "validation");
   });
 
   it("round-trips a trip with fresh IDs", async () => {
@@ -250,7 +252,7 @@ describe("export / import", () => {
     await updateTrip(db, agg.trip.id, { originDestinationId: hotel.id });
 
     const file = tripExportSchema.parse(JSON.parse(JSON.stringify(await exportTrip(db, agg.trip.id))));
-    const copy = await importTrip(db, file);
+    const copy = await importTrip(db, file, "local");
     const original = await getTripAggregate(db, agg.trip.id);
 
     expect(copy.trip.id).not.toBe(original.trip.id);
