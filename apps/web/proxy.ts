@@ -28,7 +28,7 @@ function upstreamUrl(base: URL, pathname: string, search: string): URL | null {
 
 /**
  * 1. Sign-in gate (when Google sign-in is configured): non-public pages need a session for an
- *    allowed email. API calls need that session, or their own bearer token (the mobile app).
+ *    Google account. API calls need that session, or their own bearer token (the mobile app).
  * 2. For signed-in browser calls, the API token is added server-side and never reaches the browser.
  */
 export async function proxy(request: NextRequest) {
@@ -45,7 +45,7 @@ export async function proxy(request: NextRequest) {
   // The token is only ever added for a verified session, never because sign-in is off.
   let email: string | null = null;
   if (auth && !PUBLIC(pathname)) {
-    email = await sessionEmail(request.cookies.get(SESSION_COOKIE)?.value, auth.secret, auth.allowed);
+    email = await sessionEmail(request.cookies.get(SESSION_COOKIE)?.value, auth.secret);
     const signedIn = email !== null;
     // A bearer request may skip the session only when the API itself verifies tokens.
     const bearer = Boolean(apiToken) && isApi && request.headers.get("authorization")?.startsWith("Bearer ");

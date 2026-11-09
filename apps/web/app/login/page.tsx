@@ -3,7 +3,6 @@ import { APP_NAME, APP_TAGLINE } from "@orbi/core";
 import { authConfig, safeNextPath } from "@/lib/session";
 
 const ERRORS: Record<string, string> = {
-  denied: "This Google account is not allowed to use this ORBI.",
   cancelled: "Sign-in was cancelled.",
   state: "Sign-in expired or was started elsewhere. Please try again.",
   exchange: "Google sign-in failed. Please try again.",

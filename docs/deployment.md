@@ -45,7 +45,7 @@ Optional demo trip: run `pnpm --filter @orbi/server db:seed` with the same two v
    - `http://localhost:3000/auth/google/callback` (local development)
 4. Copy the client ID and client secret.
 
-ORBI only asks Google for your email address. Anyone with a Google account can sign in and sees only their own trips; set `ORBI_ALLOWED_EMAILS` to limit sign-in to a list.
+ORBI only asks Google for your email address. Anyone with a Google account can sign in and sees only their own trips.
 
 ## 3. Deploy to Vercel
 
@@ -58,7 +58,6 @@ ORBI only asks Google for your email address. Anyone with a Google account can s
    | `ORBI_DATABASE_URL`                         | `libsql://orbi-<you>.turso.io`                             |
    | `ORBI_DATABASE_AUTH_TOKEN`                  | the Turso token                                            |
    | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | from step 2                                                |
-   | `ORBI_ALLOWED_EMAILS`                       | your Google email(s), comma separated                      |
    | `ORBI_API_TOKEN`                            | output of `openssl rand -hex 24` — used by the Android app |
    | `GEO_CONTACT_EMAIL`                         | your email (requested by the Nominatim usage policy)       |
 

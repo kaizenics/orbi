@@ -23,18 +23,13 @@ const fromB64url = (s: string) =>
 
 /**
  * Google sign-in is on when the client ID and secret are set; without them the web app is open
- * (local development). Any Google account may sign in and gets its own trips; ORBI_ALLOWED_EMAILS
- * optionally restricts sign-in to a list.
+ * (local development). Any Google account may sign in and gets its own private trips.
  */
 export const authConfig = () => {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const allowed = (process.env.ORBI_ALLOWED_EMAILS ?? "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
   // The session key is derived from the client secret (domain-separated in sign()), so no extra env var.
-  return clientId && clientSecret ? { clientId, clientSecret, secret: clientSecret, allowed } : null;
+  return clientId && clientSecret ? { clientId, clientSecret, secret: clientSecret } : null;
 };
 
 async function sign(payload: string, secret: string): Promise<string> {
@@ -61,18 +56,14 @@ export async function createSession(email: string, secret: string): Promise<stri
   return `${payload}.${await sign(payload, secret)}`;
 }
 
-/** The signed-in email, or null. Re-checks the optional allow-list so removing an email revokes access. */
-export async function sessionEmail(
-  cookie: string | undefined,
-  secret: string,
-  allowed: string[],
-): Promise<string | null> {
+/** The signed-in email, or null. */
+export async function sessionEmail(cookie: string | undefined, secret: string): Promise<string | null> {
   const [expires, email, mac] = cookie?.split(".") ?? [];
   if (!expires || !email || !mac || !(Number(expires) > Date.now())) return null;
   if (!safeEqual(mac, await sign(`${expires}.${email}`, secret))) return null;
   try {
     const decoded = fromB64url(email);
-    return allowed.length === 0 || allowed.includes(decoded) ? decoded : null;
+    return decoded;
   } catch {
     return null;
   }
