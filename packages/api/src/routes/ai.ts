@@ -52,23 +52,25 @@ export function aiRoutes(deps: AiRouteDeps) {
       const { tripId } = c.req.valid("param");
       const payload = await generateDraft(
         pipeline(),
-        getTripAggregate(deps.db, tripId),
+        await getTripAggregate(deps.db, tripId),
         c.req.valid("json").prompt,
       );
-      return c.json(createProposal(deps.db, tripId, payload), 201);
+      return c.json(await createProposal(deps.db, tripId, payload), 201);
     })
     .post("/trips/:tripId/ai/edits", tripParam, validate("json", aiEditRequestSchema), async (c) => {
       const { tripId } = c.req.valid("param");
       const payload = await proposeEdit(
         pipeline(),
-        getTripAggregate(deps.db, tripId),
+        await getTripAggregate(deps.db, tripId),
         c.req.valid("json").instruction,
       );
-      return c.json(createProposal(deps.db, tripId, payload), 201);
+      return c.json(await createProposal(deps.db, tripId, payload), 201);
     })
-    .get("/proposals/:id", idParam, (c) => c.json(getProposal(deps.db, c.req.valid("param").id)))
-    .post("/proposals/:id/apply", idParam, validate("json", applyProposalRequestSchema), (c) =>
-      c.json(applyProposal(deps.db, c.req.valid("param").id, c.req.valid("json").exclude)),
+    .get("/proposals/:id", idParam, async (c) => c.json(await getProposal(deps.db, c.req.valid("param").id)))
+    .post("/proposals/:id/apply", idParam, validate("json", applyProposalRequestSchema), async (c) =>
+      c.json(await applyProposal(deps.db, c.req.valid("param").id, c.req.valid("json").exclude)),
     )
-    .delete("/proposals/:id", idParam, (c) => c.json(discardProposal(deps.db, c.req.valid("param").id)));
+    .delete("/proposals/:id", idParam, async (c) =>
+      c.json(await discardProposal(deps.db, c.req.valid("param").id)),
+    );
 }

@@ -6,7 +6,12 @@ const envSchema = z
   .object({
     ORBI_HOST: z.string().min(1).default("127.0.0.1"),
     ORBI_PORT: z.coerce.number().int().min(1).max(65535).default(3100),
-    ORBI_DATABASE_PATH: z.string().min(1).default("./data/orbi.db"),
+    /** libSQL URL: a local file (default) or a Turso database (libsql://<db>.turso.io). */
+    ORBI_DATABASE_URL: z.string().min(1).default("file:./data/orbi.db"),
+    /** Turso auth token (remote databases only). */
+    ORBI_DATABASE_AUTH_TOKEN: z.string().min(1).optional(),
+    /** Set by Vercel; a local file database would be lost there. */
+    VERCEL: z.string().optional(),
     ORBI_API_TOKEN: z
       .string()
       .min(16, "must be at least 16 characters (generate one with: openssl rand -hex 24)")
@@ -58,6 +63,14 @@ const envSchema = z
         message: "required when AI_PROVIDER=openrouter",
       });
     }
+    if (env.VERCEL && env.ORBI_DATABASE_URL.startsWith("file:")) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["ORBI_DATABASE_URL"],
+        message:
+          "Vercel's filesystem is temporary: use a Turso URL (libsql://...) with ORBI_DATABASE_AUTH_TOKEN",
+      });
+    }
     if (!LOOPBACK.has(env.ORBI_HOST) && !env.ORBI_API_TOKEN) {
       ctx.addIssue({
         code: "custom",
@@ -67,14 +80,14 @@ const envSchema = z
     }
   });
 
-export type ServerEnv = z.infer<typeof envSchema>;
+export type ApiEnv = z.infer<typeof envSchema>;
 
 /** Parses server env, throwing a readable error listing every invalid variable. */
-export function parseEnv(source: Record<string, string | undefined>): ServerEnv {
+export function parseEnv(source: Record<string, string | undefined>): ApiEnv {
   const result = envSchema.safeParse(source);
   if (!result.success) {
     const issues = result.error.issues.map((i) => `  ${i.path.join(".")}: ${i.message}`).join("\n");
-    throw new Error(`Invalid ORBI server environment:\n${issues}`);
+    throw new Error(`Invalid ORBI environment:\n${issues}`);
   }
   return result.data;
 }

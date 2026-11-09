@@ -60,6 +60,6 @@ export function fakeGeo(options: { failRouting?: boolean; modes?: TravelMode[] }
   return { geo, calls };
 }
 
-export function testDeps(overrides: Partial<AppDeps> = {}): AppDeps {
-  return { version: "1.2.3", db: createTestDb(), geo: fakeGeo().geo, clientConfig, ...overrides };
+export async function testDeps(overrides: Partial<AppDeps> = {}): Promise<AppDeps> {
+  return { version: "1.2.3", db: await createTestDb(), geo: fakeGeo().geo, clientConfig, ...overrides };
 }

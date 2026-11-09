@@ -4,6 +4,8 @@
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "allowImportingTsExtensions": true,
+    // Type-only imports of the API pass through server code (TypeScript 6 no longer loads @types by default).
+    "types": ["node"],
     "paths": {
       "@/*": ["./src/*"]
     }

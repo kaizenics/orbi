@@ -38,7 +38,7 @@ export async function getDayRoute(
   dayId: string,
   options: { refresh?: boolean } = {},
 ): Promise<DayRoute> {
-  const { day, defaultTravelMode, stops } = getDayStops(deps.db, dayId);
+  const { day, defaultTravelMode, stops } = await getDayStops(deps.db, dayId);
   const dayMode = day.travelMode ?? defaultTravelMode;
 
   const plans: LegPlan[] = stops.slice(0, -1).map((from, i) => {
@@ -49,7 +49,7 @@ export async function getDayRoute(
 
   const cached = options.refresh
     ? new Map<string, CachedLeg>()
-    : getCachedLegs(
+    : await getCachedLegs(
         deps.db,
         plans.map((p) => p.key),
       );
@@ -83,7 +83,7 @@ export async function getDayRoute(
         durationS: leg.durationS,
         geometry: encodePolyline(leg.coordinates),
       }));
-      putCachedLegs(deps.db, toCache, deps.cacheTtlMs);
+      await putCachedLegs(deps.db, toCache, deps.cacheTtlMs);
       toCache.forEach((c, k) =>
         resolved.set(run.start + k, routed(runPlans[k]!, c.distanceM, c.durationS, c.geometry)),
       );

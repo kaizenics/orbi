@@ -27,26 +27,26 @@ const tripParam = validate("param", z.object({ tripId: idSchema }));
 
 export function tripRoutes(db: Db) {
   return new Hono()
-    .get("/", (c) => c.json(listTrips(db)))
-    .post("/", validate("json", createTripInputSchema), (c) =>
-      c.json(createTrip(db, c.req.valid("json")), 201),
+    .get("/", async (c) => c.json(await listTrips(db)))
+    .post("/", validate("json", createTripInputSchema), async (c) =>
+      c.json(await createTrip(db, c.req.valid("json")), 201),
     )
-    .post("/import", validate("json", tripExportSchema), (c) =>
-      c.json(importTrip(db, c.req.valid("json")), 201),
+    .post("/import", validate("json", tripExportSchema), async (c) =>
+      c.json(await importTrip(db, c.req.valid("json")), 201),
     )
-    .get("/:tripId", tripParam, (c) => c.json(getTripAggregate(db, c.req.valid("param").tripId)))
-    .patch("/:tripId", tripParam, validate("json", updateTripInputSchema), (c) =>
-      c.json(updateTrip(db, c.req.valid("param").tripId, c.req.valid("json"), expectedRevision(c))),
+    .get("/:tripId", tripParam, async (c) => c.json(await getTripAggregate(db, c.req.valid("param").tripId)))
+    .patch("/:tripId", tripParam, validate("json", updateTripInputSchema), async (c) =>
+      c.json(await updateTrip(db, c.req.valid("param").tripId, c.req.valid("json"), expectedRevision(c))),
     )
-    .delete("/:tripId", tripParam, (c) => {
-      deleteTrip(db, c.req.valid("param").tripId, expectedRevision(c));
+    .delete("/:tripId", tripParam, async (c) => {
+      await deleteTrip(db, c.req.valid("param").tripId, expectedRevision(c));
       return c.body(null, 204);
     })
-    .put("/:tripId/preferences", tripParam, validate("json", tripPreferencesSchema), (c) =>
-      c.json(putPreferences(db, c.req.valid("param").tripId, c.req.valid("json"), expectedRevision(c))),
+    .put("/:tripId/preferences", tripParam, validate("json", tripPreferencesSchema), async (c) =>
+      c.json(await putPreferences(db, c.req.valid("param").tripId, c.req.valid("json"), expectedRevision(c))),
     )
-    .post("/:tripId/destinations", tripParam, validate("json", createDestinationInputSchema), (c) => {
-      const { value, revision } = createDestination(
+    .post("/:tripId/destinations", tripParam, validate("json", createDestinationInputSchema), async (c) => {
+      const { value, revision } = await createDestination(
         db,
         c.req.valid("param").tripId,
         c.req.valid("json"),
@@ -54,8 +54,8 @@ export function tripRoutes(db: Db) {
       );
       return c.json({ data: value, revision }, 201);
     })
-    .get("/:tripId/export", tripParam, (c) => {
-      const file = exportTrip(db, c.req.valid("param").tripId);
+    .get("/:tripId/export", tripParam, async (c) => {
+      const file = await exportTrip(db, c.req.valid("param").tripId);
       const slug =
         file.data.trip.name
           .toLowerCase()

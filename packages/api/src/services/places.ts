@@ -27,23 +27,27 @@ export async function searchPlaces(
   const key = hash(
     `${deps.geocoder.name}|search|${normalize(query)}|${roundBias(options.near)}|${options.limit}`,
   );
-  const cached = getCachedGeocode<PlaceCandidate[]>(deps.db, key);
+  const cached = await getCachedGeocode<PlaceCandidate[]>(deps.db, key);
   if (cached) return cached;
 
   deps.log?.(`[geo] ${deps.geocoder.name} search (cache miss): "${normalize(query)}"`);
   const results = await deps.geocoder.search(query, options);
-  putCachedGeocode(deps.db, { key, provider: deps.geocoder.name, op: "search", results }, deps.cacheTtlMs);
+  await putCachedGeocode(
+    deps.db,
+    { key, provider: deps.geocoder.name, op: "search", results },
+    deps.cacheTtlMs,
+  );
   return results;
 }
 
 export async function reversePlace(deps: PlacesDeps, at: LatLng): Promise<PlaceCandidate | null> {
   const key = hash(`${deps.geocoder.name}|reverse|${at.lat.toFixed(5)},${at.lng.toFixed(5)}`);
-  const cached = getCachedGeocode<{ place: PlaceCandidate | null }>(deps.db, key);
+  const cached = await getCachedGeocode<{ place: PlaceCandidate | null }>(deps.db, key);
   if (cached) return cached.place;
 
   deps.log?.(`[geo] ${deps.geocoder.name} reverse (cache miss): ${at.lat},${at.lng}`);
   const place = await deps.geocoder.reverse(at);
-  putCachedGeocode(
+  await putCachedGeocode(
     deps.db,
     { key, provider: deps.geocoder.name, op: "reverse", results: { place } },
     deps.cacheTtlMs,

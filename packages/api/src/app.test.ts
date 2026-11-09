@@ -4,8 +4,8 @@ import { createApp } from "./app.ts";
 import { testDeps } from "../test/fakes.ts";
 
 let app: ReturnType<typeof createApp>;
-beforeEach(() => {
-  app = createApp(testDeps());
+beforeEach(async () => {
+  app = createApp(await testDeps());
 });
 
 const json = (body: unknown, headers: Record<string, string> = {}) => ({
@@ -177,7 +177,7 @@ describe("itinerary", () => {
 
 describe("auth and limits", () => {
   it("requires the bearer token except for health", async () => {
-    const secured = createApp(testDeps({ apiToken: "s3cret" }));
+    const secured = createApp(await testDeps({ apiToken: "s3cret" }));
     expect((await secured.request("/health")).status).toBe(200);
     const denied = await secured.request("/trips");
     expect(denied.status).toBe(401);

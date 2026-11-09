@@ -7,7 +7,7 @@ ENV HUSKY=0 \
     NODE_ENV=production \
     ORBI_HOST=0.0.0.0 \
     ORBI_PORT=3100 \
-    ORBI_DATABASE_PATH=/data/orbi.db
+    ORBI_DATABASE_URL=file:/data/orbi.db
 
 RUN npm install -g pnpm@11.25.0
 

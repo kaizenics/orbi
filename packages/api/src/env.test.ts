@@ -6,7 +6,7 @@ describe("parseEnv", () => {
     expect(parseEnv({})).toMatchObject({
       ORBI_HOST: "127.0.0.1",
       ORBI_PORT: 3100,
-      ORBI_DATABASE_PATH: "./data/orbi.db",
+      ORBI_DATABASE_URL: "file:./data/orbi.db",
       ORBI_CORS_ORIGINS: [],
     });
   });
@@ -31,5 +31,12 @@ describe("parseEnv", () => {
     expect(parseEnv({ AI_PROVIDER: "ollama", AI_MODEL: "qwen3:8b" }).OLLAMA_BASE_URL).toBe(
       "http://127.0.0.1:11434",
     );
+  });
+
+  it("refuses a file database on Vercel", () => {
+    expect(() => parseEnv({ VERCEL: "1" })).toThrow(/Turso/);
+    expect(
+      parseEnv({ VERCEL: "1", ORBI_DATABASE_URL: "libsql://orbi.turso.io" }).ORBI_DATABASE_URL,
+    ).toContain("turso");
   });
 });

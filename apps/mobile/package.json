@@ -38,6 +38,7 @@
   "devDependencies": {
     "@orbi/eslint-config": "workspace:*",
     "@tailwindcss/postcss": "catalog:",
+    "@types/node": "catalog:",
     "@types/react": "catalog:",
     "eslint": "catalog:",
     "lightningcss": "1.30.1",

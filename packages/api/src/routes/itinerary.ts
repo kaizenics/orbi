@@ -27,8 +27,8 @@ const idParam = validate("param", z.object({ id: idSchema }));
 
 export function destinationRoutes(db: Db) {
   return new Hono()
-    .patch("/:id", idParam, validate("json", updateDestinationInputSchema), (c) => {
-      const { value, revision } = updateDestination(
+    .patch("/:id", idParam, validate("json", updateDestinationInputSchema), async (c) => {
+      const { value, revision } = await updateDestination(
         db,
         c.req.valid("param").id,
         c.req.valid("json"),
@@ -36,16 +36,16 @@ export function destinationRoutes(db: Db) {
       );
       return c.json({ data: value, revision });
     })
-    .delete("/:id", idParam, (c) => {
-      const { revision } = deleteDestination(db, c.req.valid("param").id, expectedRevision(c));
+    .delete("/:id", idParam, async (c) => {
+      const { revision } = await deleteDestination(db, c.req.valid("param").id, expectedRevision(c));
       return c.json({ data: null, revision });
     });
 }
 
 export function dayRoutes(db: Db) {
   return new Hono()
-    .patch("/:id", idParam, validate("json", updateDayInputSchema), (c) => {
-      const { value, revision } = updateDay(
+    .patch("/:id", idParam, validate("json", updateDayInputSchema), async (c) => {
+      const { value, revision } = await updateDay(
         db,
         c.req.valid("param").id,
         c.req.valid("json"),
@@ -53,8 +53,8 @@ export function dayRoutes(db: Db) {
       );
       return c.json({ data: value, revision });
     })
-    .post("/:id/items", idParam, validate("json", createItemInputSchema), (c) => {
-      const { value, revision } = createItem(
+    .post("/:id/items", idParam, validate("json", createItemInputSchema), async (c) => {
+      const { value, revision } = await createItem(
         db,
         c.req.valid("param").id,
         c.req.valid("json"),
@@ -62,8 +62,8 @@ export function dayRoutes(db: Db) {
       );
       return c.json({ data: value, revision }, 201);
     })
-    .put("/:id/order", idParam, validate("json", reorderDayInputSchema), (c) => {
-      const { value, revision } = reorderDay(
+    .put("/:id/order", idParam, validate("json", reorderDayInputSchema), async (c) => {
+      const { value, revision } = await reorderDay(
         db,
         c.req.valid("param").id,
         c.req.valid("json").itemIds,
@@ -75,8 +75,8 @@ export function dayRoutes(db: Db) {
 
 export function itemRoutes(db: Db) {
   return new Hono()
-    .patch("/:id", idParam, validate("json", updateItemInputSchema), (c) => {
-      const { value, revision } = updateItem(
+    .patch("/:id", idParam, validate("json", updateItemInputSchema), async (c) => {
+      const { value, revision } = await updateItem(
         db,
         c.req.valid("param").id,
         c.req.valid("json"),
@@ -84,12 +84,12 @@ export function itemRoutes(db: Db) {
       );
       return c.json({ data: value, revision });
     })
-    .delete("/:id", idParam, (c) => {
-      const { revision } = deleteItem(db, c.req.valid("param").id, expectedRevision(c));
+    .delete("/:id", idParam, async (c) => {
+      const { revision } = await deleteItem(db, c.req.valid("param").id, expectedRevision(c));
       return c.json({ data: null, revision });
     })
-    .post("/:id/move", idParam, validate("json", moveItemInputSchema), (c) => {
-      const { value, revision } = moveItem(
+    .post("/:id/move", idParam, validate("json", moveItemInputSchema), async (c) => {
+      const { value, revision } = await moveItem(
         db,
         c.req.valid("param").id,
         c.req.valid("json"),

@@ -8,7 +8,7 @@
 import { createAiModel, generateDraft } from "@orbi/ai";
 import { OrbiError, type TripAggregate } from "@orbi/core";
 import { createGeoProviders } from "@orbi/geo";
-import { parseEnv } from "./env.ts";
+import { parseEnv } from "@orbi/api";
 
 const env = parseEnv(process.env);
 if (!env.AI_PROVIDER || !env.AI_MODEL)

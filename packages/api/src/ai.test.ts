@@ -29,7 +29,7 @@ function mockAi(json: unknown) {
 }
 
 async function setup(aiJson?: unknown) {
-  const app = createApp(testDeps({ ai: aiJson === undefined ? null : mockAi(aiJson) }));
+  const app = createApp(await testDeps({ ai: aiJson === undefined ? null : mockAi(aiJson) }));
   const send = (method: string, path: string, body?: unknown) =>
     app.request(path, {
       method,

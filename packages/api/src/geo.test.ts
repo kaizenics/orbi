@@ -4,9 +4,9 @@ import { decodePolyline } from "@orbi/geo/utils";
 import { createApp } from "./app.ts";
 import { fakeGeo, testDeps } from "../test/fakes.ts";
 
-function setup(geoOptions?: Parameters<typeof fakeGeo>[0]) {
+async function setup(geoOptions?: Parameters<typeof fakeGeo>[0]) {
   const { geo, calls } = fakeGeo(geoOptions);
-  const app = createApp(testDeps({ geo }));
+  const app = createApp(await testDeps({ geo }));
   const send = (method: string, path: string, body?: unknown) =>
     app.request(path, {
       method,
@@ -18,7 +18,7 @@ function setup(geoOptions?: Parameters<typeof fakeGeo>[0]) {
 }
 
 /** A trip with one walking day holding `n` stops spread around Cebu City. */
-async function tripWithStops(send: ReturnType<typeof setup>["send"], n: number) {
+async function tripWithStops(send: Awaited<ReturnType<typeof setup>>["send"], n: number) {
   const trip = tripAggregateSchema.parse(
     await (await send("POST", "/trips", { name: "Cebu", dayCount: 1 })).json(),
   );
@@ -37,14 +37,14 @@ async function tripWithStops(send: ReturnType<typeof setup>["send"], n: number) 
   return { dayId, itemIds: full.days[0]!.items.map((i) => i.id) };
 }
 
-const route = async (send: ReturnType<typeof setup>["send"], dayId: string, refresh = false) =>
+const route = async (send: Awaited<ReturnType<typeof setup>>["send"], dayId: string, refresh = false) =>
   dayRouteSchema.parse(
     await (await send("GET", `/days/${dayId}/route${refresh ? "?refresh=1" : ""}`)).json(),
   ) as DayRoute;
 
 describe("GET /config", () => {
   it("serves the client configuration", async () => {
-    const { send } = setup();
+    const { send } = await setup();
     const config = clientConfigSchema.parse(await (await send("GET", "/config")).json());
     expect(config.map.styleUrl).toContain("tiles.example.test");
   });
@@ -52,7 +52,7 @@ describe("GET /config", () => {
 
 describe("places", () => {
   it("caches searches: the same query (any case/spacing) never reaches the provider twice", async () => {
-    const { send, calls } = setup();
+    const { send, calls } = await setup();
     const first = await send("GET", "/places/search?q=Fort%20San%20Pedro&near=10.3,123.9");
     expect(first.status).toBe(200);
     expect(((await first.json()) as { name: string }[])[0]).toMatchObject({
@@ -66,14 +66,14 @@ describe("places", () => {
   });
 
   it("validates queries and reports missing type-ahead", async () => {
-    const { send } = setup();
+    const { send } = await setup();
     expect((await send("GET", "/places/search?q=x")).status).toBe(400);
     expect((await send("GET", "/places/search?q=fort&near=north")).status).toBe(400);
     expect((await send("GET", "/places/suggest?q=fort")).status).toBe(404);
   });
 
   it("reverse-geocodes a map pin", async () => {
-    const { send, calls } = setup();
+    const { send, calls } = await setup();
     const res = await send("GET", "/places/reverse?lat=10.2927&lng=123.9058");
     expect(((await res.json()) as { place: { name: string } }).place.name).toBe("Fort San Pedro");
     await send("GET", "/places/reverse?lat=10.2927&lng=123.9058");
@@ -83,7 +83,7 @@ describe("places", () => {
 
 describe("day routes", () => {
   it("routes a whole day in one request and serves it from cache afterwards", async () => {
-    const { send, calls } = setup();
+    const { send, calls } = await setup();
     const { dayId } = await tripWithStops(send, 5);
 
     const first = await route(send, dayId);
@@ -99,7 +99,7 @@ describe("day routes", () => {
   });
 
   it("recomputes only the changed legs after a reorder, in at most one request", async () => {
-    const { send, calls } = setup();
+    const { send, calls } = await setup();
     const { dayId, itemIds } = await tripWithStops(send, 5);
     await route(send, dayId);
 
@@ -118,7 +118,7 @@ describe("day routes", () => {
   });
 
   it("degrades to labelled straight-line legs when routing fails", async () => {
-    const { send } = setup({ failRouting: true });
+    const { send } = await setup({ failRouting: true });
     const { dayId } = await tripWithStops(send, 3);
     const result = await route(send, dayId);
     expect(result.legs.every((l) => l.status === "unrouted")).toBe(true);
@@ -131,7 +131,7 @@ describe("day routes", () => {
   });
 
   it("marks legs unrouted when the travel mode has no configured router", async () => {
-    const { send, calls } = setup({ modes: ["driving"] });
+    const { send, calls } = await setup({ modes: ["driving"] });
     const { dayId } = await tripWithStops(send, 2);
     const result = await route(send, dayId);
     expect(result.legs[0]).toMatchObject({ status: "unrouted", mode: "walking" });
@@ -139,7 +139,7 @@ describe("day routes", () => {
   });
 
   it("walking and driving yield different durations; refresh bypasses the cache", async () => {
-    const { send, calls } = setup();
+    const { send, calls } = await setup();
     const { dayId } = await tripWithStops(send, 3);
     const walking = await route(send, dayId);
     await send("PATCH", `/days/${dayId}`, { travelMode: "driving" });
@@ -151,7 +151,7 @@ describe("day routes", () => {
   });
 
   it("returns an empty route for days with fewer than two stops", async () => {
-    const { send } = setup();
+    const { send } = await setup();
     const { dayId } = await tripWithStops(send, 1);
     expect((await route(send, dayId)).legs).toEqual([]);
   });
