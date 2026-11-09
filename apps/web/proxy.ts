@@ -43,10 +43,10 @@ export async function proxy(request: NextRequest) {
   }
 
   // The token is only ever added for a verified session, never because sign-in is off.
-  let signedIn = false;
+  let email: string | null = null;
   if (auth && !PUBLIC(pathname)) {
-    signedIn =
-      (await sessionEmail(request.cookies.get(SESSION_COOKIE)?.value, auth.secret, auth.allowed)) !== null;
+    email = await sessionEmail(request.cookies.get(SESSION_COOKIE)?.value, auth.secret, auth.allowed);
+    const signedIn = email !== null;
     // A bearer request may skip the session only when the API itself verifies tokens.
     const bearer = Boolean(apiToken) && isApi && request.headers.get("authorization")?.startsWith("Bearer ");
     if (!signedIn && !bearer) {
@@ -59,7 +59,7 @@ export async function proxy(request: NextRequest) {
   if (!isApi) return NextResponse.next();
 
   const headers = new Headers(request.headers);
-  if (signedIn && apiToken) headers.set("Authorization", `Bearer ${apiToken}`);
+  if (email && apiToken) headers.set("Authorization", `Bearer ${apiToken}`);
 
   if (!externalApi) return NextResponse.next({ request: { headers } });
   const target = upstreamUrl(externalApi, pathname, search);

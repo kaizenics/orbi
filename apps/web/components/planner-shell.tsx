@@ -11,7 +11,12 @@ export function PlannerShell({ panel, map }: { panel: React.ReactNode; map: Reac
           <Link href="/trips" className="text-lg font-semibold tracking-tight">
             {APP_NAME}
           </Link>
-          <ServerStatus />
+          <span className="flex items-center gap-3">
+            <ServerStatus />
+            <Link href="/settings" className="text-sm text-muted-foreground hover:text-foreground">
+              Settings
+            </Link>
+          </span>
         </header>
         <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-6 *:shrink-0">{panel}</div>
       </aside>

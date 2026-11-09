@@ -2,6 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
+  AiConnection,
   CreateTripInput,
   TripAggregate,
   TripPreferences,
@@ -117,12 +118,12 @@ export function useAiActions(tripId: string) {
   const queryClient = useQueryClient();
   return {
     draft: useMutation({
-      mutationFn: async (prompt: string) =>
-        unwrap(await api().trips[":tripId"].ai.drafts.$post({ param: { tripId }, json: { prompt } })),
+      mutationFn: async (json: { prompt: string; ai: AiConnection }) =>
+        unwrap(await api().trips[":tripId"].ai.drafts.$post({ param: { tripId }, json })),
     }),
     edit: useMutation({
-      mutationFn: async (instruction: string) =>
-        unwrap(await api().trips[":tripId"].ai.edits.$post({ param: { tripId }, json: { instruction } })),
+      mutationFn: async (json: { instruction: string; ai: AiConnection }) =>
+        unwrap(await api().trips[":tripId"].ai.edits.$post({ param: { tripId }, json })),
     }),
     apply: useMutation({
       mutationFn: async ({ id, exclude }: { id: string; exclude: string[] }) =>

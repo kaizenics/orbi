@@ -2,21 +2,23 @@
 
 import { useEffect, useState } from "react";
 import { Loader2, MapPin, MapPinOff, Sparkles } from "lucide-react";
-import type { ClientConfig, Proposal, ProposedStop, TripAggregate } from "@orbi/core";
+import type { Proposal, ProposedStop, TripAggregate } from "@orbi/core";
+import Link from "next/link";
 import { ApiError } from "@orbi/api/client";
 import { useAiActions } from "@/lib/mutations";
+import { useAiConnection } from "@/lib/ai-connection";
 import { formatMinutes, formatMoney } from "@/lib/format";
 import { inputClass, primaryButton, secondaryButton } from "@/lib/ui";
 
 interface AiAssistantProps {
   data: TripAggregate;
-  ai: ClientConfig["ai"];
   /** Resolved, still-selected draft stops to preview on the map. */
   onPreview: (stops: { dayId: string; stop: ProposedStop }[] | null) => void;
 }
 
 /** AI proposes, the user decides: nothing is saved until "Apply". */
-export function AiAssistant({ data, ai, onPreview }: AiAssistantProps) {
+export function AiAssistant({ data, onPreview }: AiAssistantProps) {
+  const connection = useAiConnection();
   const actions = useAiActions(data.trip.id);
   const [text, setText] = useState("");
   const [proposal, setProposal] = useState<Proposal | null>(null);
@@ -60,18 +62,21 @@ export function AiAssistant({ data, ai, onPreview }: AiAssistantProps) {
       return next;
     });
 
-  if (!ai.available) {
+  if (!connection) {
     return (
       <section
         aria-labelledby="ai-heading"
         className="flex flex-col gap-1 rounded-lg border border-dashed p-4 text-sm"
       >
         <h2 id="ai-heading" className="font-medium">
-          AI assistant unavailable
+          AI assistant
         </h2>
         <p className="text-muted-foreground">
-          Set <code className="font-mono">AI_PROVIDER</code> and <code className="font-mono">AI_MODEL</code>{" "}
-          on the server (Ollama or OpenRouter) to plan and edit with AI. Everything else works without it.
+          Add your own AI API key (OpenRouter, OpenAI, Anthropic or Google) in{" "}
+          <Link href="/settings" className="underline">
+            Settings
+          </Link>{" "}
+          to draft and edit itineraries with AI. Everything else works without it.
         </p>
       </section>
     );
@@ -83,7 +88,7 @@ export function AiAssistant({ data, ai, onPreview }: AiAssistantProps) {
     <section aria-labelledby="ai-heading" className="flex flex-col gap-3 rounded-lg border p-4">
       <h2 id="ai-heading" className="flex items-center gap-2 text-sm font-medium">
         <Sparkles aria-hidden className="size-4" /> AI assistant
-        <span className="font-normal text-muted-foreground">· {ai.model}</span>
+        <span className="font-normal text-muted-foreground">· {connection.model}</span>
       </h2>
 
       {!proposal ? (
@@ -92,8 +97,9 @@ export function AiAssistant({ data, ai, onPreview }: AiAssistantProps) {
           onSubmit={(e) => {
             e.preventDefault();
             const mode = (e.nativeEvent as SubmitEvent).submitter?.getAttribute("value");
-            const run = mode === "edit" ? actions.edit : actions.draft;
-            run.mutate(text.trim(), { onSuccess: open });
+            if (mode === "edit")
+              actions.edit.mutate({ instruction: text.trim(), ai: connection }, { onSuccess: open });
+            else actions.draft.mutate({ prompt: text.trim(), ai: connection }, { onSuccess: open });
           }}
         >
           <label htmlFor="ai-text" className="sr-only">

@@ -109,7 +109,7 @@ function TripPlanner({ data }: { data: TripAggregate }) {
         />
       ) : null}
 
-      {config.data ? <AiAssistant data={data} ai={config.data.ai} onPreview={onPreview} /> : null}
+      <AiAssistant data={data} onPreview={onPreview} />
 
       <PlaceSearch
         tripId={data.trip.id}
