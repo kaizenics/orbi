@@ -3,4 +3,5 @@ export * as schema from "./schema.ts";
 export * from "./repo/cache.ts";
 export * from "./repo/exchange.ts";
 export * from "./repo/itinerary.ts";
+export * from "./repo/proposals.ts";
 export * from "./repo/trips.ts";

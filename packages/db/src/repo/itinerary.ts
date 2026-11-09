@@ -45,7 +45,7 @@ function assertDayHasRoom(tx: DbOrTx, dayId: string) {
 }
 
 /** Inserts an item at `position` (default: end) and re-packs the day. */
-function insertItem(
+export function insertItem(
   tx: DbOrTx,
   dayId: string,
   destinationId: string,
@@ -79,7 +79,7 @@ function insertItem(
 // ---------------------------------------------------------------------------
 
 export function createDestination(
-  db: Db,
+  db: DbOrTx,
   tripId: string,
   input: CreateDestinationInput,
   expectedRevision?: number,
@@ -132,7 +132,7 @@ export function createDestination(
 }
 
 export function updateDestination(
-  db: Db,
+  db: DbOrTx,
   id: string,
   input: UpdateDestinationInput,
   expectedRevision?: number,
@@ -149,7 +149,7 @@ export function updateDestination(
 }
 
 /** Deletes a destination, its scheduled occurrences (cascade), and re-packs affected days. */
-export function deleteDestination(db: Db, id: string, expectedRevision?: number): Mutation<null> {
+export function deleteDestination(db: DbOrTx, id: string, expectedRevision?: number): Mutation<null> {
   return db.transaction((tx) => {
     const current = getDestinationOrThrow(tx, id);
     const revision = touchTrip(tx, current.tripId, expectedRevision);
@@ -174,7 +174,7 @@ export function deleteDestination(db: Db, id: string, expectedRevision?: number)
 // ---------------------------------------------------------------------------
 
 export function updateDay(
-  db: Db,
+  db: DbOrTx,
   dayId: string,
   input: UpdateDayInput,
   expectedRevision?: number,
@@ -195,7 +195,7 @@ export function updateDay(
 // ---------------------------------------------------------------------------
 
 export function createItem(
-  db: Db,
+  db: DbOrTx,
   dayId: string,
   input: CreateItemInput,
   expectedRevision?: number,
@@ -213,7 +213,7 @@ export function createItem(
 }
 
 export function updateItem(
-  db: Db,
+  db: DbOrTx,
   id: string,
   input: UpdateItemInput,
   expectedRevision?: number,
@@ -231,7 +231,7 @@ export function updateItem(
 }
 
 /** Unschedules an occurrence; the destination stays in the trip's ideas list. */
-export function deleteItem(db: Db, id: string, expectedRevision?: number): Mutation<null> {
+export function deleteItem(db: DbOrTx, id: string, expectedRevision?: number): Mutation<null> {
   return db.transaction((tx) => {
     const item = getItemOrThrow(tx, id);
     const day = getDayOrThrow(tx, item.tripDayId);
@@ -244,7 +244,7 @@ export function deleteItem(db: Db, id: string, expectedRevision?: number): Mutat
 
 /** Idempotent reorder: `itemIds` must be exactly the day's current items, in the new order. */
 export function reorderDay(
-  db: Db,
+  db: DbOrTx,
   dayId: string,
   itemIds: readonly string[],
   expectedRevision?: number,
@@ -269,7 +269,7 @@ export function reorderDay(
 
 /** Moves an item to another day (or another position on the same day). */
 export function moveItem(
-  db: Db,
+  db: DbOrTx,
   id: string,
   input: MoveItemInput,
   expectedRevision?: number,
