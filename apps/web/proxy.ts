@@ -1,7 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { SESSION_COOKIE, isValidSession } from "@/lib/session";
 
 const apiBase = new URL(process.env.ORBI_API_URL ?? "http://127.0.0.1:3100");
 const apiToken = process.env.ORBI_API_TOKEN;
+const webPassword = process.env.ORBI_WEB_PASSWORD;
+
+const problem = (status: number, code: string, detail: string) =>
+  NextResponse.json({ type: `urn:orbi:problem:${code}`, title: detail, status, code, detail }, { status });
 
 /**
  * Builds the upstream URL on the fixed API origin. Returns null for paths that could escape it:
@@ -18,20 +23,31 @@ function upstreamUrl(pathname: string, search: string): URL | null {
 }
 
 /**
- * Same-origin API gateway: the browser calls /api/*, Next forwards to the ORBI server and adds the
- * bearer token server-side, so the token never reaches the browser.
- *
- * The web app itself has no login (single-user MVP), so it listens on 127.0.0.1 only (see the dev
- * and start scripts). Exposing it on a network publishes the API to anyone who can reach it.
+ * 1. Login gate (when ORBI_WEB_PASSWORD is set): every page and /api call needs a valid session.
+ * 2. Same-origin API gateway: /api/* is forwarded to the ORBI server with the bearer token added
+ *    server-side, so the token never reaches the browser.
  */
-export function proxy(request: NextRequest) {
-  const target = upstreamUrl(request.nextUrl.pathname, request.nextUrl.search);
-  if (!target) {
-    return NextResponse.json(
-      { type: "urn:orbi:problem:bad_request", title: "Bad request", status: 400, code: "bad_request" },
-      { status: 400 },
-    );
+export async function proxy(request: NextRequest) {
+  const { pathname, search } = request.nextUrl;
+  const isApi = pathname === "/api" || pathname.startsWith("/api/");
+
+  // Fail closed: a token-protected API must never be published through an unauthenticated web app.
+  if (apiToken && !webPassword) {
+    return problem(503, "misconfigured", "Set ORBI_WEB_PASSWORD: the web app forwards the API token");
   }
+
+  if (webPassword && !pathname.startsWith("/login") && !pathname.startsWith("/auth/")) {
+    if (!(await isValidSession(request.cookies.get(SESSION_COOKIE)?.value, webPassword))) {
+      if (isApi) return problem(401, "unauthorized", "Log in to ORBI first");
+      const login = new URL("/login", request.url);
+      login.searchParams.set("next", pathname + search);
+      return NextResponse.redirect(login);
+    }
+  }
+
+  if (!isApi) return NextResponse.next();
+  const target = upstreamUrl(pathname, search);
+  if (!target) return problem(400, "bad_request", "Invalid API path");
   const headers = new Headers(request.headers);
   headers.delete("cookie");
   if (apiToken) headers.set("Authorization", `Bearer ${apiToken}`);
@@ -39,5 +55,6 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: "/api/:path*",
+  // Everything except Next internals and public static files.
+  matcher: ["/((?!_next/|favicon.ico|icon.png|manifest.webmanifest|vendor/).*)"],
 };
