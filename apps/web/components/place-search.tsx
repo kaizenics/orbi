@@ -4,6 +4,9 @@ import { useState } from "react";
 import { Loader2, Plus, Search } from "lucide-react";
 import type { LatLng, PlaceCandidate } from "@orbi/core";
 import { useAddDestination, usePlaceSearch } from "@/lib/queries";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface PlaceSearchProps {
   tripId: string;
@@ -47,28 +50,24 @@ export function PlaceSearch({ tripId, dayId, dayLabel, near, existingRefs }: Pla
           setQuery(input.trim());
         }}
       >
-        <label htmlFor="place-query" className="sr-only">
+        <Label htmlFor="place-query" className="sr-only">
           Search for a place
-        </label>
-        <input
+        </Label>
+        <Input
           id="place-query"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Search places, e.g. Fort San Pedro"
-          className="min-w-0 flex-1 rounded-md border bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          className="min-w-0 flex-1"
         />
-        <button
-          type="submit"
-          disabled={input.trim().length < 2 || search.isFetching}
-          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
-        >
+        <Button type="submit" disabled={input.trim().length < 2 || search.isFetching}>
           {search.isFetching ? (
             <Loader2 aria-hidden className="size-4 animate-spin" />
           ) : (
             <Search aria-hidden className="size-4" />
           )}
           Search
-        </button>
+        </Button>
       </form>
 
       {search.isError ? <p className="text-sm text-destructive">{search.error.message}</p> : null}
@@ -93,23 +92,24 @@ export function PlaceSearch({ tripId, dayId, dayLabel, near, existingRefs }: Pla
                 ) : (
                   <span className="flex flex-wrap gap-2">
                     {dayId ? (
-                      <button
+                      <Button
+                        size="sm"
                         type="button"
                         disabled={add.isPending}
                         onClick={() => addPlace(p, true)}
-                        className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
                       >
                         <Plus aria-hidden className="size-3.5" /> Add to {dayLabel}
-                      </button>
+                      </Button>
                     ) : null}
-                    <button
+                    <Button
+                      size="sm"
+                      variant="outline"
                       type="button"
                       disabled={add.isPending}
                       onClick={() => addPlace(p, false)}
-                      className="rounded-md border px-2.5 py-1.5 text-xs font-medium disabled:opacity-50"
                     >
                       Save as idea
-                    </button>
+                    </Button>
                   </span>
                 )}
               </li>

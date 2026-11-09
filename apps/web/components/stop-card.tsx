@@ -1,12 +1,9 @@
 "use client";
 
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { useState } from "react";
-import { Clock, ExternalLink, GripVertical, Pencil, X } from "lucide-react";
+import { AlertTriangle, ExternalLink, Pencil, X } from "lucide-react";
 import {
   DESTINATION_CATEGORIES,
-  formatClock,
   type Destination,
   type ItineraryItem,
   type ScheduledStop,
@@ -15,16 +12,23 @@ import {
 import { buildNavigationLinks } from "@orbi/geo/utils";
 import type { TripActions } from "@/lib/mutations";
 import { formatMinutes, formatMoney } from "@/lib/format";
-import { inputClass, labelClass, parseMoney, primaryButton, secondaryButton, textOrNull } from "@/lib/ui";
+import { useFormatters } from "@/lib/preferences";
+import { labelClass, parseMoney, textOrNull } from "@/lib/ui";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { FormSelect } from "./form-select";
+import { cn } from "@/lib/utils";
 
 interface StopCardProps {
   item: ItineraryItem;
   destination: Destination;
-  number: number;
-  color: string;
   mode: TravelMode;
   currency: string;
   schedule: ScheduledStop | undefined;
+  /** Minutes this stop is reached after its fixed time, if late. */
+  lateMin: number | undefined;
   selected: boolean;
   onSelect: () => void;
   days: { id: string; label: string }[];
@@ -32,91 +36,107 @@ interface StopCardProps {
   actions: TripActions;
 }
 
+/** Small rounded label like "STAY 1 h" on a timeline card. */
+export function Chip({ children, tone }: { children: React.ReactNode; tone?: "warn" }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-medium",
+        tone === "warn"
+          ? "border-amber-500/40 text-amber-600 dark:text-amber-400"
+          : "text-muted-foreground [&_b]:text-foreground",
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+/** A place on the day timeline: name and time, chips, and actions. Dragging is handled by the row. */
 export function StopCard(props: StopCardProps) {
   const { item, destination: d, actions } = props;
   const [editing, setEditing] = useState(false);
-  const sortable = useSortable({ id: item.id });
   const nav = buildNavigationLinks({ lat: d.latitude, lng: d.longitude, name: d.name }, props.mode);
   const duration = item.durationOverrideMin ?? d.visitDurationMin;
   const s = props.schedule;
+  const { clock } = useFormatters();
 
   return (
     <div
-      ref={sortable.setNodeRef}
-      style={{ transform: CSS.Transform.toString(sortable.transform), transition: sortable.transition }}
-      className={`rounded-lg border bg-card transition-colors ${props.selected ? "border-foreground bg-muted" : ""} ${
-        sortable.isDragging ? "relative z-10 shadow-md" : ""
-      }`}
+      className={cn(
+        "group relative rounded-xl border bg-card transition-colors",
+        props.selected && "border-primary/60 bg-accent/40",
+      )}
     >
-      <div className="flex items-start gap-2 p-3">
-        <button
-          type="button"
-          aria-label={`Reorder ${d.name} (space to pick up, arrows to move)`}
-          className="mt-0.5 cursor-grab touch-none rounded p-0.5 text-muted-foreground hover:text-foreground"
-          {...sortable.attributes}
-          {...sortable.listeners}
-        >
-          <GripVertical aria-hidden className="size-4" />
-        </button>
-        <button
-          type="button"
-          onClick={props.onSelect}
-          aria-pressed={props.selected}
-          className="flex min-w-0 flex-1 items-start gap-3 text-left focus-visible:outline-none"
-        >
-          <span
-            aria-label={`Stop ${props.number}`}
-            className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
-            style={{ backgroundColor: props.color }}
-          >
-            {props.number}
+      <button
+        type="button"
+        onClick={props.onSelect}
+        aria-pressed={props.selected}
+        className="flex w-full flex-col gap-1.5 p-3 text-left focus-visible:outline-none"
+      >
+        <span className="flex items-start justify-between gap-3">
+          <span className="font-semibold">{d.name}</span>
+          <span className="shrink-0 text-sm font-semibold tabular-nums">
+            {s?.arrival != null ? clock(s.arrival) : "–"}
           </span>
-          <span className="flex min-w-0 flex-col gap-0.5">
-            <span className="font-medium">{d.name}</span>
-            <span className="inline-flex flex-wrap items-center gap-x-1 text-xs text-muted-foreground">
-              <Clock aria-hidden className="size-3" />
-              {s?.arrival != null && s.departure != null
-                ? `${formatClock(s.arrival)}–${formatClock(s.departure)}`
-                : "Time unknown"}
-              {" · "}
-              {formatMinutes(duration)}
-              {item.fixedStartTime ? ` · fixed ${item.fixedStartTime}` : ""}
-              {d.estCostMinor !== null
-                ? ` · ${formatMoney(d.estCostMinor, props.currency)}${d.costSource === "ai_estimate" ? " (AI estimate)" : ""}`
-                : ""}
-            </span>
-            {d.address ? <span className="truncate text-xs text-muted-foreground">{d.address}</span> : null}
-            {item.notes ? <span className="text-xs">{item.notes}</span> : null}
-          </span>
-        </button>
-        <div className="flex shrink-0 items-center">
-          <button
-            type="button"
-            aria-label={`Edit ${d.name}`}
-            aria-expanded={editing}
-            onClick={() => setEditing((v) => !v)}
-            className="rounded-md p-1 text-muted-foreground hover:text-foreground"
-          >
-            <Pencil aria-hidden className="size-4" />
-          </button>
-          <a
-            href={nav.google}
-            target="_blank"
-            rel="noreferrer"
-            aria-label={`Open ${d.name} in Google Maps`}
-            className="rounded-md p-1 text-muted-foreground hover:text-foreground"
-          >
-            <ExternalLink aria-hidden className="size-4" />
+        </span>
+        <span className="flex flex-wrap gap-1.5 pr-24">
+          <Chip>
+            STAY <b>{formatMinutes(duration)}</b>
+          </Chip>
+          {item.fixedStartTime ? (
+            <Chip>
+              FIXED <b>{item.fixedStartTime}</b>
+            </Chip>
+          ) : null}
+          {d.estCostMinor !== null ? (
+            <Chip>
+              <b>{formatMoney(d.estCostMinor, props.currency)}</b>
+              {d.costSource === "ai_estimate" ? "est." : ""}
+            </Chip>
+          ) : null}
+          {props.lateMin ? (
+            <Chip tone="warn">
+              <AlertTriangle aria-hidden className="size-3" /> +{formatMinutes(props.lateMin)}
+            </Chip>
+          ) : null}
+        </span>
+        {d.address ? <span className="truncate text-xs text-muted-foreground">{d.address}</span> : null}
+        {item.notes ? <span className="text-xs">{item.notes}</span> : null}
+      </button>
+      {/* Shown on hover, keyboard focus, or when the stop is selected. */}
+      <div
+        className={cn(
+          "absolute right-1.5 bottom-1.5 flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100",
+          (props.selected || editing) && "opacity-100",
+        )}
+      >
+        <Button
+          variant="ghost"
+          size="icon"
+          type="button"
+          aria-label={`Edit ${d.name}`}
+          aria-expanded={editing}
+          onClick={() => setEditing((v) => !v)}
+          className="size-7 text-muted-foreground"
+        >
+          <Pencil aria-hidden className="size-3.5" />
+        </Button>
+        <Button variant="ghost" size="icon" asChild className="size-7 text-muted-foreground">
+          <a href={nav.google} target="_blank" rel="noreferrer" aria-label={`Open ${d.name} in Google Maps`}>
+            <ExternalLink aria-hidden className="size-3.5" />
           </a>
-          <button
-            type="button"
-            aria-label={`Remove ${d.name} from this day`}
-            onClick={() => actions.removeItem.mutate(item.id)}
-            className="rounded-md p-1 text-muted-foreground hover:text-destructive"
-          >
-            <X aria-hidden className="size-4" />
-          </button>
-        </div>
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          type="button"
+          aria-label={`Remove ${d.name} from this day`}
+          onClick={() => actions.removeItem.mutate(item.id)}
+          className="size-7 text-muted-foreground hover:text-destructive"
+        >
+          <X aria-hidden className="size-3.5" />
+        </Button>
       </div>
 
       {editing ? (
@@ -146,84 +166,63 @@ export function StopCard(props: StopCardProps) {
             setEditing(false);
           }}
         >
-          <label className={labelClass}>
+          <Label className={labelClass}>
             Name
-            <input name="name" required maxLength={120} defaultValue={d.name} className={inputClass} />
-          </label>
+            <Input name="name" required maxLength={120} defaultValue={d.name} />
+          </Label>
           <div className="grid grid-cols-2 gap-2">
-            <label className={labelClass}>
+            <Label className={labelClass}>
               Visit (minutes)
-              <input
-                name="duration"
-                type="number"
-                min={0}
-                max={1440}
-                defaultValue={duration}
-                className={inputClass}
-              />
-            </label>
-            <label className={labelClass}>
+              <Input name="duration" type="number" min={0} max={1440} defaultValue={duration} />
+            </Label>
+            <Label className={labelClass}>
               Fixed arrival
-              <input
-                name="fixedStartTime"
-                type="time"
-                defaultValue={item.fixedStartTime ?? ""}
-                className={inputClass}
-              />
-            </label>
-            <label className={labelClass}>
+              <Input name="fixedStartTime" type="time" defaultValue={item.fixedStartTime ?? ""} />
+            </Label>
+            <Label className={labelClass}>
               Category
-              <select name="category" defaultValue={d.category} className={inputClass}>
-                {DESTINATION_CATEGORIES.map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </select>
-            </label>
-            <label className={labelClass}>
+              <FormSelect
+                name="category"
+                defaultValue={d.category}
+                options={DESTINATION_CATEGORIES.map((c) => ({ value: c, label: c }))}
+              />
+            </Label>
+            <Label className={labelClass}>
               Estimated cost (₱)
-              <input
+              <Input
                 name="cost"
                 inputMode="decimal"
                 defaultValue={d.estCostMinor === null ? "" : String(d.estCostMinor / 100)}
-                className={inputClass}
               />
-            </label>
+            </Label>
           </div>
-          <label className={labelClass}>
+          <Label className={labelClass}>
             Opening hours (as you know them)
-            <input name="openingHours" defaultValue={d.openingHours ?? ""} className={inputClass} />
-          </label>
-          <label className={labelClass}>
+            <Input name="openingHours" defaultValue={d.openingHours ?? ""} />
+          </Label>
+          <Label className={labelClass}>
             Description
-            <textarea name="description" rows={2} defaultValue={d.description ?? ""} className={inputClass} />
-          </label>
-          <label className={labelClass}>
+            <Textarea name="description" rows={2} defaultValue={d.description ?? ""} />
+          </Label>
+          <Label className={labelClass}>
             Notes for this visit
-            <textarea name="notes" rows={2} defaultValue={item.notes ?? ""} className={inputClass} />
-          </label>
+            <Textarea name="notes" rows={2} defaultValue={item.notes ?? ""} />
+          </Label>
           <div className="flex flex-wrap items-end gap-2">
-            <button type="submit" className={primaryButton}>
-              Save
-            </button>
-            <button type="button" className={secondaryButton} onClick={() => setEditing(false)}>
+            <Button type="submit">Save</Button>
+            <Button variant="outline" type="button" onClick={() => setEditing(false)}>
               Cancel
-            </button>
-            <label className={`${labelClass} ml-auto`}>
+            </Button>
+            <Label className={`${labelClass} ml-auto`}>
               Move to day
-              <select
-                className={inputClass}
+              <FormSelect
                 value={props.currentDayId}
-                onChange={(e) =>
-                  actions.moveItem.mutate({ id: item.id, toDayId: e.target.value, toPosition: 999 })
+                onValueChange={(toDayId) =>
+                  actions.moveItem.mutate({ id: item.id, toDayId, toPosition: 999 })
                 }
-              >
-                {props.days.map((day) => (
-                  <option key={day.id} value={day.id}>
-                    {day.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+                options={props.days.map((day) => ({ value: day.id, label: day.label }))}
+              />
+            </Label>
           </div>
         </form>
       ) : null}

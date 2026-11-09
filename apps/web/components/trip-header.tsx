@@ -8,7 +8,15 @@ import { ApiError } from "@orbi/api/client";
 import { PACES, type CostSummary, type Pace, type TripAggregate, type UpdateTripInput } from "@orbi/core";
 import { useDeleteTrip, type TripActions } from "@/lib/mutations";
 import { formatDateRange, formatMoney } from "@/lib/format";
-import { inputClass, labelClass, parseMoney, primaryButton, secondaryButton, textOrNull } from "@/lib/ui";
+import { labelClass, parseMoney, textOrNull } from "@/lib/ui";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { DatePicker } from "@/components/date-picker";
+import { FormSelect } from "./form-select";
+import { useConfirm } from "./confirm-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export function TripHeader({
   data,
@@ -24,6 +32,7 @@ export function TripHeader({
   const [error, setError] = useState<string | null>(null);
   const del = useDeleteTrip();
   const router = useRouter();
+  const confirm = useConfirm();
 
   const save = async (form: FormData) => {
     setError(null);
@@ -42,7 +51,12 @@ export function TripHeader({
         if (
           !(e instanceof ApiError) ||
           e.code !== "confirmation_required" ||
-          !window.confirm(`${e.message.split(". Resend")[0]}. Continue?`)
+          !(await confirm({
+            title: "Remove days from this trip?",
+            description: `${e.message.split(". Resend")[0]}.`,
+            confirmLabel: "Remove days",
+            destructive: true,
+          }))
         ) {
           throw e;
         }
@@ -75,27 +89,38 @@ export function TripHeader({
           <ArrowLeft aria-hidden className="size-4" /> Trips
         </Link>
         <span className="flex gap-1">
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             type="button"
             aria-label="Edit trip"
             aria-expanded={editing}
-            className="rounded-md p-1.5 text-muted-foreground hover:text-foreground"
+            className="size-8 text-muted-foreground hover:text-foreground"
             onClick={() => setEditing((v) => !v)}
           >
             <Pencil aria-hidden className="size-4" />
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             type="button"
             aria-label="Delete trip"
-            className="rounded-md p-1.5 text-muted-foreground hover:text-destructive"
-            onClick={() => {
-              if (window.confirm(`Delete "${trip.name}" and everything in it? This cannot be undone.`)) {
+            className="size-8 text-muted-foreground hover:text-destructive"
+            onClick={async () => {
+              if (
+                await confirm({
+                  title: `Delete "${trip.name}"?`,
+                  description: "Everything in this trip will be deleted. This cannot be undone.",
+                  confirmLabel: "Delete trip",
+                  destructive: true,
+                })
+              ) {
                 del.mutate(trip.id, { onSuccess: () => router.push("/trips") });
               }
             }}
           >
             <Trash2 aria-hidden className="size-4" />
-          </button>
+          </Button>
         </span>
       </div>
       <h1 className="text-2xl font-semibold tracking-tight">{trip.name}</h1>
@@ -115,116 +140,96 @@ export function TripHeader({
         ) : null}
       </p>
 
-      {editing ? (
-        <form
-          aria-label="Edit trip"
-          className="flex flex-col gap-2 rounded-lg border p-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void save(new FormData(e.currentTarget));
-          }}
-        >
-          <label className={labelClass}>
-            Name
-            <input name="name" required maxLength={120} defaultValue={trip.name} className={inputClass} />
-          </label>
-          <label className={labelClass}>
-            Region
-            <input name="regionName" defaultValue={trip.regionName ?? ""} className={inputClass} />
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            <label className={labelClass}>
-              Start date
-              <input
-                name="startDate"
-                type="date"
-                defaultValue={trip.startDate ?? ""}
-                className={inputClass}
-              />
-            </label>
-            <label className={labelClass}>
-              End date
-              <input name="endDate" type="date" defaultValue={trip.endDate ?? ""} className={inputClass} />
-            </label>
-            <label className={labelClass}>
-              Days (if no dates)
-              <input
-                name="dayCount"
-                type="number"
-                min={1}
-                max={60}
-                defaultValue={data.days.length}
-                className={inputClass}
-              />
-            </label>
-            <label className={labelClass}>
-              Budget (₱)
-              <input
-                name="budget"
-                inputMode="decimal"
-                defaultValue={trip.budgetMinor === null ? "" : String(trip.budgetMinor / 100)}
-                className={inputClass}
-              />
-            </label>
-            <label className={labelClass}>
-              Day starts
-              <input
-                name="dayStartTime"
-                type="time"
-                required
-                defaultValue={preferences.dayStartTime}
-                className={inputClass}
-              />
-            </label>
-            <label className={labelClass}>
-              Day ends
-              <input
-                name="dayEndTime"
-                type="time"
-                required
-                defaultValue={preferences.dayEndTime}
-                className={inputClass}
-              />
-            </label>
-            <label className={labelClass}>
-              Pace
-              <select name="pace" defaultValue={preferences.pace} className={inputClass}>
-                {PACES.map((p) => (
-                  <option key={p}>{p}</option>
-                ))}
-              </select>
-            </label>
-            <label className={labelClass}>
-              Max travel per day (min)
-              <input
-                name="maxTravel"
-                type="number"
-                min={0}
-                max={1440}
-                defaultValue={preferences.maxDailyTravelMin ?? ""}
-                className={inputClass}
-              />
-            </label>
-          </div>
-          <label className={labelClass}>
-            Interests (comma separated)
-            <input name="interests" defaultValue={preferences.interests.join(", ")} className={inputClass} />
-          </label>
-          <label className={labelClass}>
-            Notes for planning
-            <textarea name="notes" rows={2} defaultValue={preferences.notes ?? ""} className={inputClass} />
-          </label>
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
-          <div className="flex gap-2">
-            <button type="submit" className={primaryButton} disabled={actions.updateTrip.isPending}>
-              Save
-            </button>
-            <button type="button" className={secondaryButton} onClick={() => setEditing(false)}>
-              Cancel
-            </button>
-          </div>
-        </form>
-      ) : null}
+      <Dialog open={editing} onOpenChange={setEditing}>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit trip</DialogTitle>
+            <DialogDescription>Dates, budget and how you like to travel.</DialogDescription>
+          </DialogHeader>
+          <form
+            aria-label="Edit trip"
+            className="flex flex-col gap-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void save(new FormData(e.currentTarget));
+            }}
+          >
+            <Label className={labelClass}>
+              Name
+              <Input name="name" required maxLength={120} defaultValue={trip.name} />
+            </Label>
+            <Label className={labelClass}>
+              Region
+              <Input name="regionName" defaultValue={trip.regionName ?? ""} />
+            </Label>
+            <div className="grid grid-cols-2 gap-2">
+              <Label className={labelClass}>
+                Start date
+                <DatePicker name="startDate" defaultValue={trip.startDate ?? ""} />
+              </Label>
+              <Label className={labelClass}>
+                End date
+                <DatePicker name="endDate" defaultValue={trip.endDate ?? ""} />
+              </Label>
+              <Label className={labelClass}>
+                Days (if no dates)
+                <Input name="dayCount" type="number" min={1} max={60} defaultValue={data.days.length} />
+              </Label>
+              <Label className={labelClass}>
+                Budget (₱)
+                <Input
+                  name="budget"
+                  inputMode="decimal"
+                  defaultValue={trip.budgetMinor === null ? "" : String(trip.budgetMinor / 100)}
+                />
+              </Label>
+              <Label className={labelClass}>
+                Day starts
+                <Input name="dayStartTime" type="time" required defaultValue={preferences.dayStartTime} />
+              </Label>
+              <Label className={labelClass}>
+                Day ends
+                <Input name="dayEndTime" type="time" required defaultValue={preferences.dayEndTime} />
+              </Label>
+              <Label className={labelClass}>
+                Pace
+                <FormSelect
+                  name="pace"
+                  defaultValue={preferences.pace}
+                  options={PACES.map((p) => ({ value: p, label: p }))}
+                />
+              </Label>
+              <Label className={labelClass}>
+                Max travel per day (min)
+                <Input
+                  name="maxTravel"
+                  type="number"
+                  min={0}
+                  max={1440}
+                  defaultValue={preferences.maxDailyTravelMin ?? ""}
+                />
+              </Label>
+            </div>
+            <Label className={labelClass}>
+              Interests (comma separated)
+              <Input name="interests" defaultValue={preferences.interests.join(", ")} />
+            </Label>
+            <Label className={labelClass}>
+              Notes for planning
+              <Textarea name="notes" rows={2} defaultValue={preferences.notes ?? ""} />
+            </Label>
+            {error ? <p className="text-sm text-destructive">{error}</p> : null}
+            <div className="flex gap-2">
+              <Button type="submit" disabled={actions.updateTrip.isPending}>
+                Save
+              </Button>
+              <Button variant="outline" type="button" onClick={() => setEditing(false)}>
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

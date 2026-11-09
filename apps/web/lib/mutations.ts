@@ -10,6 +10,7 @@ import type {
   UpdateDestinationInput,
   UpdateItemInput,
   UpdateTripInput,
+  ActivityType,
 } from "@orbi/core";
 import { api, unwrap } from "./api";
 import { queryKeys } from "./queries";
@@ -79,6 +80,17 @@ export function useTripActions(tripId: string) {
       async ({ dayId, destinationId }: { dayId: string; destinationId: string }) =>
         unwrap(await api().days[":id"].items.$post({ param: { id: dayId }, json: { destinationId } })),
     ),
+    addActivity: useTripAction(
+      tripId,
+      async ({
+        dayId,
+        ...json
+      }: {
+        dayId: string;
+        activity: { type: ActivityType; title: string };
+        durationOverrideMin: number;
+      }) => unwrap(await api().days[":id"].items.$post({ param: { id: dayId }, json })),
+    ),
     moveItem: useTripAction(
       tripId,
       async ({ id, toDayId, toPosition }: { id: string; toDayId: string; toPosition: number }) =>
@@ -109,6 +121,23 @@ export function useDeleteTrip() {
     mutationFn: async (tripId: string) => {
       const res = await api().trips[":tripId"].$delete({ param: { tripId } });
       if (!res.ok) await unwrap(res);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.trips }),
+  });
+}
+
+/** Copies a trip with all its days and stops (export → import, so every ID is new). */
+export function useDuplicateTrip() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (tripId: string) => {
+      const file = await unwrap(await api().trips[":tripId"].export.$get({ param: { tripId } }));
+      const name = `${file.data.trip.name} (copy)`.slice(0, 120);
+      return unwrap(
+        await api().trips.import.$post({
+          json: { ...file, data: { ...file.data, trip: { ...file.data.trip, name } } },
+        }),
+      );
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.trips }),
   });

@@ -8,7 +8,10 @@ import { ApiError } from "@orbi/api/client";
 import { useAiActions } from "@/lib/mutations";
 import { useAiConnection } from "@/lib/ai-connection";
 import { formatMinutes, formatMoney } from "@/lib/format";
-import { inputClass, primaryButton, secondaryButton } from "@/lib/ui";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 interface AiAssistantProps {
   data: TripAggregate;
@@ -33,7 +36,9 @@ export function AiAssistant({ data, onPreview }: AiAssistantProps) {
     setExcluded(
       new Set(
         p.payload.kind === "draft"
-          ? p.payload.days.flatMap((d) => d.stops.filter((s) => !s.location).map((s) => s.key))
+          ? p.payload.days.flatMap((d) =>
+              d.stops.filter((s) => !s.activityType && !s.location).map((s) => s.key),
+            )
           : p.payload.operations.flatMap((op, i) =>
               op.op === "add" && !op.stop.location ? [String(i)] : [],
             ),
@@ -102,15 +107,14 @@ export function AiAssistant({ data, onPreview }: AiAssistantProps) {
             else actions.draft.mutate({ prompt: text.trim(), ai: connection }, { onSuccess: open });
           }}
         >
-          <label htmlFor="ai-text" className="sr-only">
+          <Label htmlFor="ai-text" className="sr-only">
             Describe your trip or the change you want
-          </label>
-          <textarea
+          </Label>
+          <Textarea
             id="ai-text"
             rows={3}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            className={inputClass}
             placeholder={
               hasStops
                 ? "e.g. Make day 2 less tiring, or add a seafood restaurant near the fort"
@@ -118,23 +122,24 @@ export function AiAssistant({ data, onPreview }: AiAssistantProps) {
             }
           />
           <div className="flex flex-wrap items-center gap-2">
-            <button
+            <Button
               type="submit"
               value="draft"
-              className={primaryButton}
+
               disabled={busy || text.trim().length < 5}
             >
               Draft days
-            </button>
+            </Button>
             {hasStops ? (
-              <button
+              <Button
+                variant="outline"
                 type="submit"
                 value="edit"
-                className={secondaryButton}
+
                 disabled={busy || text.trim().length < 3}
               >
                 Suggest edits
-              </button>
+              </Button>
             ) : null}
             {busy ? (
               <span role="status" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -158,12 +163,11 @@ export function AiAssistant({ data, onPreview }: AiAssistantProps) {
                   </legend>
                   {day.stops.map((s) => (
                     <label key={s.key} className="flex items-start gap-2 rounded-md border p-2 text-sm">
-                      <input
-                        type="checkbox"
-                        className="mt-1"
-                        disabled={!s.location}
+                      <Checkbox
+                        className="mt-0.5"
+                        disabled={!s.activityType && !s.location}
                         checked={!excluded.has(s.key)}
-                        onChange={() => toggle(s.key)}
+                        onCheckedChange={() => toggle(s.key)}
                       />
                       <span className="flex flex-col">
                         <span className="font-medium">{s.name}</span>
@@ -175,7 +179,11 @@ export function AiAssistant({ data, onPreview }: AiAssistantProps) {
                           {" · "}
                           {s.why}
                         </span>
-                        {s.location ? (
+                        {s.activityType ? (
+                          <span className="text-xs text-muted-foreground">
+                            Activity · no map location needed
+                          </span>
+                        ) : s.location ? (
                           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                             <MapPin aria-hidden className="size-3" /> {s.location.address ?? s.location.name}
                           </span>
@@ -196,12 +204,11 @@ export function AiAssistant({ data, onPreview }: AiAssistantProps) {
               {proposal.payload.operations.map((op, i) => (
                 <li key={i}>
                   <label className="flex items-start gap-2 rounded-md border p-2 text-sm">
-                    <input
-                      type="checkbox"
-                      className="mt-1"
+                    <Checkbox
+                      className="mt-0.5"
                       disabled={op.op === "add" && !op.stop.location}
                       checked={!excluded.has(String(i))}
-                      onChange={() => toggle(String(i))}
+                      onCheckedChange={() => toggle(String(i))}
                     />
                     <span>{describeOperation(op, data)}</span>
                   </label>
@@ -216,26 +223,27 @@ export function AiAssistant({ data, onPreview }: AiAssistantProps) {
           )}
 
           <div className="flex gap-2">
-            <button
+            <Button
               type="button"
-              className={primaryButton}
+
               disabled={actions.apply.isPending}
               onClick={() =>
                 actions.apply.mutate({ id: proposal.id, exclude: [...excluded] }, { onSuccess: close })
               }
             >
               Apply selected
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
               type="button"
-              className={secondaryButton}
+
               onClick={() => {
                 actions.discard.mutate(proposal.id);
                 close();
               }}
             >
               Discard
-            </button>
+            </Button>
           </div>
         </div>
       )}
