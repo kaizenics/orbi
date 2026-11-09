@@ -61,7 +61,8 @@ export async function proxy(request: NextRequest) {
   const headers = new Headers(request.headers);
   // Each Google account has its own trips: the API scopes data by this header.
   // A bearer request (Android app) keeps its own value; browser values are always replaced.
-  if (email || !headers.get("authorization")?.startsWith("Bearer ")) headers.delete("x-orbi-user");
+  const trustedBearer = Boolean(apiToken) && headers.get("authorization") === `Bearer ${apiToken}`;
+  if (email || !trustedBearer) headers.delete("x-orbi-user");
   if (email) headers.set("x-orbi-user", email);
   if (email && apiToken) headers.set("Authorization", `Bearer ${apiToken}`);
 
