@@ -55,9 +55,7 @@ export default async function LoginPage({
         ) : (
           <p className="text-sm text-muted-foreground">
             Sign-in is not configured on this server (set <code className="font-mono">GOOGLE_CLIENT_ID</code>,{" "}
-            <code className="font-mono">GOOGLE_CLIENT_SECRET</code>,{" "}
-            <code className="font-mono">ORBI_SESSION_SECRET</code> and{" "}
-            <code className="font-mono">ORBI_ALLOWED_EMAILS</code>).{" "}
+            <code className="font-mono">GOOGLE_CLIENT_SECRET</code>).{" "}
             <Link href="/trips" className="underline">
               Continue without signing in
             </Link>

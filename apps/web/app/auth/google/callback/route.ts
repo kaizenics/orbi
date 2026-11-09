@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
     claims.email_verified === true &&
     email !== undefined;
   if (!valid) return fail(request, "exchange");
-  if (!auth.allowed.includes(email)) return fail(request, "denied");
+  if (auth.allowed.length > 0 && !auth.allowed.includes(email)) return fail(request, "denied");
 
   const response = NextResponse.redirect(new URL(safeNextPath(saved.next), request.url));
   response.cookies.delete({ name: OAUTH_COOKIE, path: "/auth/google" });

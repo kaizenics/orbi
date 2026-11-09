@@ -1,6 +1,6 @@
 /**
  * Web session after Google sign-in: "<expiry>.<base64url email>.<hmac>" in an HTTP-only cookie,
- * signed with ORBI_SESSION_SECRET (rotate it to log everyone out). Web Crypto only, so it works
+ * signed with a key derived from GOOGLE_CLIENT_SECRET (rotating that secret logs everyone out). Web Crypto only, so it works
  * in proxy.ts and route handlers alike.
  */
 export const SESSION_COOKIE = "orbi_session";
@@ -21,18 +21,20 @@ const fromB64url = (s: string) =>
     Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0)),
   );
 
-/** Google sign-in is on when these are set; without them the web app is open (local development). */
+/**
+ * Google sign-in is on when the client ID and secret are set; without them the web app is open
+ * (local development). Any Google account may sign in and gets its own trips; ORBI_ALLOWED_EMAILS
+ * optionally restricts sign-in to a list.
+ */
 export const authConfig = () => {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const secret = process.env.ORBI_SESSION_SECRET;
   const allowed = (process.env.ORBI_ALLOWED_EMAILS ?? "")
     .split(",")
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
-  return clientId && clientSecret && secret && allowed.length
-    ? { clientId, clientSecret, secret, allowed }
-    : null;
+  // The session key is derived from the client secret (domain-separated in sign()), so no extra env var.
+  return clientId && clientSecret ? { clientId, clientSecret, secret: clientSecret, allowed } : null;
 };
 
 async function sign(payload: string, secret: string): Promise<string> {
@@ -59,7 +61,7 @@ export async function createSession(email: string, secret: string): Promise<stri
   return `${payload}.${await sign(payload, secret)}`;
 }
 
-/** The signed-in email, or null. Re-checks the allow-list so removing an email revokes access. */
+/** The signed-in email, or null. Re-checks the optional allow-list so removing an email revokes access. */
 export async function sessionEmail(
   cookie: string | undefined,
   secret: string,
@@ -70,7 +72,7 @@ export async function sessionEmail(
   if (!safeEqual(mac, await sign(`${expires}.${email}`, secret))) return null;
   try {
     const decoded = fromB64url(email);
-    return allowed.includes(decoded) ? decoded : null;
+    return allowed.length === 0 || allowed.includes(decoded) ? decoded : null;
   } catch {
     return null;
   }
