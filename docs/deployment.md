@@ -1,6 +1,6 @@
 # Deploying ORBI
 
-The recommended setup runs **everything on Vercel**: the web app and the API (served by Next.js at `/api`), with data in **Turso** and sign-in through **Google**. AI uses OpenRouter. No server to maintain.
+The recommended setup runs **everything on Vercel**: the web app and the API (served by Next.js at `/api`), with data in **Turso** and sign-in through **Google**. AI uses each user's own API key. No server to maintain.
 
 ```mermaid
 flowchart LR
@@ -14,7 +14,7 @@ flowchart LR
   API --> OSM[(Nominatim / OSRM)]
 ```
 
-All of these have free plans with limits that can change: [Vercel Hobby](https://vercel.com/docs/plans/hobby) is for personal, non-commercial use; check [Turso pricing](https://turso.tech/pricing) and OpenRouter's free-model limits (about 50 requests/day) before relying on them.
+All of these have free plans with limits that can change: [Vercel Hobby](https://vercel.com/docs/plans/hobby) is for personal, non-commercial use; check [Turso pricing](https://turso.tech/pricing) before relying on it.
 
 ## 1. Create the Turso database
 
@@ -53,22 +53,23 @@ ORBI only asks Google for your email address and only lets in the emails listed 
 2. **Root Directory:** `apps/web` (framework Next.js; Vercel installs the pnpm workspace from the repository root).
 3. **Environment variables:**
 
-   | Variable                                          | Value                                                             |
-   | ------------------------------------------------- | ----------------------------------------------------------------- |
-   | `ORBI_DATABASE_URL`                               | `libsql://orbi-<you>.turso.io`                                    |
-   | `ORBI_DATABASE_AUTH_TOKEN`                        | the Turso token                                                   |
-   | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`       | from step 2                                                       |
-   | `ORBI_ALLOWED_EMAILS`                             | your Google email(s), comma separated                             |
-   | `ORBI_SESSION_SECRET`                             | output of `openssl rand -hex 32` (changing it signs everyone out) |
-   | `ORBI_API_TOKEN`                                  | output of `openssl rand -hex 24` — used by the Android app        |
-   | `AI_PROVIDER` / `AI_MODEL` / `OPENROUTER_API_KEY` | optional, e.g. `openrouter`, a `:free` model ID, your key         |
-   | `GEO_CONTACT_EMAIL`                               | your email (requested by the Nominatim usage policy)              |
+   | Variable                                    | Value                                                             |
+   | ------------------------------------------- | ----------------------------------------------------------------- |
+   | `ORBI_DATABASE_URL`                         | `libsql://orbi-<you>.turso.io`                                    |
+   | `ORBI_DATABASE_AUTH_TOKEN`                  | the Turso token                                                   |
+   | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | from step 2                                                       |
+   | `ORBI_ALLOWED_EMAILS`                       | your Google email(s), comma separated                             |
+   | `ORBI_SESSION_SECRET`                       | output of `openssl rand -hex 32` (changing it signs everyone out) |
+   | `ORBI_API_TOKEN`                            | output of `openssl rand -hex 24` — used by the Android app        |
+   | `GEO_CONTACT_EMAIL`                         | your email (requested by the Nominatim usage policy)              |
 
 4. Deploy, open the site, **Log in → Continue with Google**. On iPhone: Safari → Share → **Add to Home Screen**.
 
 Safety rails: on Vercel the API refuses to start with a local database file (Vercel's disk is temporary), and the app refuses to serve trips if Google sign-in is not configured.
 
-In the OpenRouter dashboard, set a credit limit on the key and use `:free` models to stay at $0.
+### AI: bring your own key
+
+After signing in, open **Settings** and choose a provider (OpenRouter, OpenAI, Anthropic or Google), a model ID and your API key. The key is saved only in your browser and sent with each AI request; the server never stores it. Enter it again on another device or browser. Usage is billed by the provider to your account: on OpenRouter, models ending in `:free` cost nothing, and a credit limit on the key prevents surprises.
 
 ## 4. Android app
 
@@ -95,7 +96,7 @@ For the Android app on your LAN, run the standalone server too: `pnpm --filter @
 
 ## Alternative: your own server (VM + Docker)
 
-To run the API on a VM instead (e.g. Oracle Cloud Always Free, or to use Ollama), use `apps/server` with `infra/docker-compose.yml` (Caddy provides HTTPS) and set `ORBI_API_URL=https://<vm-domain>` plus `ORBI_API_TOKEN` in the Vercel project: the web app then forwards `/api` to the VM. The server keeps its data in a local file (`ORBI_DATABASE_URL=file:/data/orbi.db`) or in Turso.
+To run the API on a VM instead (e.g. Oracle Cloud Always Free), use `apps/server` with `infra/docker-compose.yml` (Caddy provides HTTPS) and set `ORBI_API_URL=https://<vm-domain>` plus `ORBI_API_TOKEN` in the Vercel project: the web app then forwards `/api` to the VM. The server keeps its data in a local file (`ORBI_DATABASE_URL=file:/data/orbi.db`) or in Turso.
 
 ```bash
 cp infra/.env.example infra/.env   # set ORBI_DOMAIN, ORBI_API_TOKEN, AI settings

@@ -280,3 +280,12 @@ Deliberately out of ORBI's MVP scope (TREK has these): multi-user collaboration 
 - **Fail-closed rules:** without Google sign-in configured, the app refuses to serve trips on Vercel or when forwarding a token to an external API. Browser calls get the API token added server-side; the Android app sends its own bearer token.
 - **Known limits:** in-memory rate limiting is per serverless instance (the database cache absorbs repeats); reordering on Turso costs one network round trip per position update.
 - **Landing page** at `/` (public); the planner moved to `/trips`.
+
+## 10. Bring your own AI key (2026-11-09, owner decision)
+
+- **Ollama and server-wide AI settings removed.** Each signed-in user connects their own provider in Settings: OpenRouter, OpenAI, Anthropic or Google (official AI SDK providers). AI features work once a user has saved a key; without one, the AI panel links to Settings and everything else works.
+- **Storage (revised same day, owner decision):** the key lives only in the user's browser (localStorage) and is sent in the body of each draft/edit request; the API builds a model for that request and neither stores nor logs it. No server secret is needed (`ORBI_ENCRYPTION_KEY` dropped), the provider list is fixed (no custom base URLs, so no SSRF), and the key must be re-entered per browser. Trade-off: any script on the site could read localStorage, so no third-party scripts.
+- **Trips stay shared** among the allowed Google accounts; `ORBI_ALLOWED_EMAILS` remains the only access control until per-user trips exist.
+- **Errors:** a provider rejecting the key (401/403) becomes "Your AI provider rejected the API key. Check it in Settings."
+- **Fix found while testing:** Hono's body-limit middleware failed on body-less requests (e.g. `DELETE`) coming through Next.js; it now applies only to POST/PUT/PATCH.
+- `pnpm --filter @orbi/server ai:eval` now takes `AI_EVAL_PROVIDER`, `AI_EVAL_MODEL` and `AI_EVAL_API_KEY`.

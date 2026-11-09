@@ -3,14 +3,15 @@
 **Explore more. Plan smarter.**
 
 ORBI is an open-source, self-hostable travel itinerary planner with a map-first design. You plan trips
-day by day and see every stop as a numbered marker on a map, connected by real road routes. A local AI
-(through [Ollama](https://ollama.com)) can draft and edit itineraries, and you review its suggestions
+day by day and see every stop as a numbered marker on a map, connected by real road routes. AI (with your own
+API key for OpenRouter, OpenAI, Anthropic or Google) can draft and edit itineraries, and you review its suggestions
 before anything is saved.
 
 It runs on your own computer and needs no paid accounts or API keys.
 
 > **Status: MVP (Phases 1–6).** Plan trips day by day on a map with real road routes, reorder stops,
-> see arrival times and costs, and let AI (OpenRouter or local Ollama) draft or edit itineraries that you
+> see arrival times and costs, and let AI (with your own OpenRouter,
+> OpenAI, Anthropic or Google key) draft or edit itineraries that you
 > review before saving. The Android app still needs its first device build. See the [roadmap](./docs/roadmap.md)
 > and the [deployment guide](./docs/deployment.md).
 
@@ -24,7 +25,7 @@ It runs on your own computer and needs no paid accounts or API keys.
 | `packages/core`  | Shared schemas, types and business logic (pure TypeScript)                                                                                                                                        |
 | `packages/api`   | The HTTP API (Hono), plus a typed client for the apps                                                                                                                                             |
 | `packages/db`    | Database schema, migrations and data access (SQLite + Drizzle)                                                                                                                                    |
-| `packages/ai`    | AI providers (OpenRouter, Ollama), prompts and itinerary pipelines                                                                                                                                |
+| `packages/ai`    | AI providers (OpenRouter, OpenAI, Anthropic, Google), prompts and itinerary pipelines                                                                                                             |
 | `packages/geo`   | Geocoding/routing adapters (Nominatim, Photon, OSRM) and shared map utilities                                                                                                                     |
 | `packages/theme` | Design tokens shared by web and mobile                                                                                                                                                            |
 | `docs/`          | [Product requirements](./docs/PRD.md), [architecture](./docs/architecture.md), [database](./docs/database.md), [technical decisions](./docs/technical-decisions.md), [roadmap](./docs/roadmap.md) |

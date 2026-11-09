@@ -23,5 +23,5 @@ cached, and sent with an identifying User-Agent. Self-hosting instructions arriv
 
 ## AI models
 
-ORBI does not ship model weights. Models pulled through Ollama carry their own licences (e.g.
-Apache-2.0, Llama Community Licence, Gemma terms); check the licence of the model you configure.
+ORBI does not ship AI models. Each user connects their own AI provider account and is bound by that
+provider's terms.
