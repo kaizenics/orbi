@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { APP_NAME, APP_TAGLINE } from "@orbi/core";
-import { authConfig, safeNextPath } from "@/lib/session";
+import { authConfig, currentEmail, safeNextPath } from "@/lib/session";
 
 const ERRORS: Record<string, string> = {
   cancelled: "Sign-in was cancelled.",
@@ -15,6 +16,8 @@ export default async function LoginPage({
 }) {
   const { next, error } = await searchParams;
   const enabled = authConfig() !== null;
+  // Already signed in: skip the sign-in screen.
+  if (await currentEmail()) redirect(safeNextPath(next));
   return (
     <main className="flex min-h-dvh items-center justify-center p-6">
       <div className="flex w-full max-w-sm flex-col gap-5 rounded-lg border bg-card p-6">

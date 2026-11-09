@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     client_id: auth.clientId,
     redirect_uri: new URL("/auth/google/callback", request.url).toString(),
     response_type: "code",
-    scope: "openid email",
+    scope: "openid email profile",
     state,
     code_challenge: await pkceChallenge(verifier),
     code_challenge_method: "S256",

@@ -5,6 +5,7 @@ import {
   SESSION_MAX_AGE_S,
   authConfig,
   createSession,
+  safePicture,
   safeNextPath,
 } from "@/lib/session";
 
@@ -14,6 +15,8 @@ interface IdTokenClaims {
   exp?: number;
   email?: string;
   email_verified?: boolean;
+  name?: string;
+  picture?: string;
 }
 
 const fail = (request: NextRequest, reason: string) => {
@@ -75,12 +78,19 @@ export async function GET(request: NextRequest) {
 
   const response = NextResponse.redirect(new URL(safeNextPath(saved.next), request.url));
   response.cookies.delete({ name: OAUTH_COOKIE, path: "/auth/google" });
-  response.cookies.set(SESSION_COOKIE, await createSession(email, auth.secret), {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: request.nextUrl.protocol === "https:",
-    path: "/",
-    maxAge: SESSION_MAX_AGE_S,
-  });
+  response.cookies.set(
+    SESSION_COOKIE,
+    await createSession(
+      { email, name: claims.name?.trim() || null, picture: safePicture(claims.picture) },
+      auth.secret,
+    ),
+    {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: request.nextUrl.protocol === "https:",
+      path: "/",
+      maxAge: SESSION_MAX_AGE_S,
+    },
+  );
   return response;
 }

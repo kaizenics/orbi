@@ -10,6 +10,8 @@ import {
   Wallet,
 } from "lucide-react";
 import { APP_NAME, APP_TAGLINE } from "@orbi/core";
+import { UserMenu } from "@/components/user-menu";
+import { currentEmail } from "@/lib/session";
 
 const FEATURES = [
   {
@@ -54,7 +56,8 @@ const STEPS = [
   },
 ];
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const signedIn = (await currentEmail()) !== null;
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="sticky top-0 z-10 border-b bg-background/90 backdrop-blur">
@@ -69,12 +72,24 @@ export default function LandingPage() {
             <a href="#open-source" className="hidden text-muted-foreground hover:text-foreground sm:inline">
               Open source
             </a>
-            <Link
-              href="/login"
-              className="rounded-md bg-primary px-3 py-1.5 font-medium text-primary-foreground hover:opacity-90"
-            >
-              Log in
-            </Link>
+            {signedIn ? (
+              <>
+                <Link
+                  href="/trips"
+                  className="rounded-md bg-primary px-3 py-1.5 font-medium text-primary-foreground hover:opacity-90"
+                >
+                  Open planner
+                </Link>
+                <UserMenu />
+              </>
+            ) : (
+              <Link
+                href="/login"
+                className="rounded-md bg-primary px-3 py-1.5 font-medium text-primary-foreground hover:opacity-90"
+              >
+                Log in
+              </Link>
+            )}
           </div>
         </nav>
       </header>
