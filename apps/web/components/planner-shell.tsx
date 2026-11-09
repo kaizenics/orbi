@@ -1,7 +1,6 @@
 import { APP_NAME } from "@orbi/core";
 import Link from "next/link";
 import { Settings } from "lucide-react";
-import { ServerStatus } from "./server-status";
 import { ThemeToggle } from "./theme-toggle";
 
 const floating =
@@ -30,9 +29,6 @@ export function PlannerShell({
         </Link>
         {title ? <div className="min-w-0 truncate">{title}</div> : null}
         <span className="ml-auto flex items-center gap-1">
-          <span className="hidden sm:contents">
-            <ServerStatus />
-          </span>
           <ThemeToggle />
           <Link
             href="/settings"

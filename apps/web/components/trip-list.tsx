@@ -24,10 +24,7 @@ export function TripList() {
   if (trips.data.length === 0) {
     return (
       <div className="flex flex-col gap-4">
-        <PanelMessage title="No trips yet">
-          Create one, or load the demo trip with{" "}
-          <code className="font-mono">pnpm --filter @orbi/server db:seed</code>.
-        </PanelMessage>
+        <PanelMessage title="No trips yet">Create your first trip below.</PanelMessage>
         <NewTripForm />
       </div>
     );
