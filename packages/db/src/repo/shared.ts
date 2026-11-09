@@ -9,8 +9,8 @@ export const now = () => Date.now();
  * Concurrency guard used by every mutation: verifies the trip exists, optionally that it is still
  * at `expectedRevision` (another device may have changed it), then bumps revision + updated_at.
  */
-export function touchTrip(tx: DbOrTx, tripId: string, expectedRevision?: number): number {
-  const row = tx.select({ revision: trips.revision }).from(trips).where(eq(trips.id, tripId)).get();
+export async function touchTrip(tx: DbOrTx, tripId: string, expectedRevision?: number): Promise<number> {
+  const row = await tx.select({ revision: trips.revision }).from(trips).where(eq(trips.id, tripId)).get();
   if (!row) throw notFound("Trip", tripId);
   if (expectedRevision !== undefined && row.revision !== expectedRevision) {
     throw new OrbiError("conflict", "The trip was changed elsewhere; reload and try again", {
@@ -19,41 +19,42 @@ export function touchTrip(tx: DbOrTx, tripId: string, expectedRevision?: number)
     });
   }
   const revision = row.revision + 1;
-  tx.update(trips).set({ revision, updatedAt: now() }).where(eq(trips.id, tripId)).run();
+  await tx.update(trips).set({ revision, updatedAt: now() }).where(eq(trips.id, tripId)).run();
   return revision;
 }
 
-export function getDayOrThrow(tx: DbOrTx, dayId: string) {
-  const day = tx.select().from(tripDays).where(eq(tripDays.id, dayId)).get();
+export async function getDayOrThrow(tx: DbOrTx, dayId: string) {
+  const day = await tx.select().from(tripDays).where(eq(tripDays.id, dayId)).get();
   if (!day) throw notFound("Day", dayId);
   return day;
 }
 
-export function dayItemIds(tx: DbOrTx, dayId: string): string[] {
-  return tx
+export async function dayItemIds(tx: DbOrTx, dayId: string): Promise<string[]> {
+  const rows = await tx
     .select({ id: itineraryItems.id })
     .from(itineraryItems)
     .where(eq(itineraryItems.tripDayId, dayId))
     .orderBy(asc(itineraryItems.position))
-    .all()
-    .map((r) => r.id);
+    .all();
+  return rows.map((r) => r.id);
 }
 
 /**
  * Writes positions 0..n-1 for `itemIds` on `dayId`. SQLite cannot defer UNIQUE checks, so positions
  * are first moved to negative placeholders, then to their final values (database.md §5).
  */
-export function writePositions(tx: DbOrTx, dayId: string, itemIds: readonly string[]): void {
+export async function writePositions(tx: DbOrTx, dayId: string, itemIds: readonly string[]): Promise<void> {
   const t = now();
-  itemIds.forEach((id, i) => {
-    tx.update(itineraryItems)
+  for (const [i, id] of itemIds.entries()) {
+    await tx
+      .update(itineraryItems)
       .set({ tripDayId: dayId, position: -(i + 1), updatedAt: t })
       .where(eq(itineraryItems.id, id))
       .run();
-  });
-  itemIds.forEach((id, i) => {
-    tx.update(itineraryItems).set({ position: i }).where(eq(itineraryItems.id, id)).run();
-  });
+  }
+  for (const [i, id] of itemIds.entries()) {
+    await tx.update(itineraryItems).set({ position: i }).where(eq(itineraryItems.id, id)).run();
+  }
 }
 
 export function toDay(row: typeof tripDays.$inferSelect): TripDay {

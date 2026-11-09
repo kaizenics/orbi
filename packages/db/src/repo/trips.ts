@@ -16,27 +16,29 @@ import type { Db, DbOrTx } from "../client.ts";
 import { destinations, itineraryItems, tripDays, tripPreferences, trips } from "../schema.ts";
 import { now, toDay, toItem, touchTrip } from "./shared.ts";
 
-export function listTrips(db: DbOrTx): TripSummary[] {
-  const rows = db.select().from(trips).orderBy(desc(trips.updatedAt)).all();
+export async function listTrips(db: DbOrTx): Promise<TripSummary[]> {
+  const rows = await db.select().from(trips).orderBy(desc(trips.updatedAt)).all();
   if (rows.length === 0) return [];
   const ids = rows.map((r) => r.id);
   const dayCounts = new Map(
-    db
-      .select({ tripId: tripDays.tripId, n: count() })
-      .from(tripDays)
-      .where(inArray(tripDays.tripId, ids))
-      .groupBy(tripDays.tripId)
-      .all()
-      .map((r) => [r.tripId, r.n]),
+    (
+      await db
+        .select({ tripId: tripDays.tripId, n: count() })
+        .from(tripDays)
+        .where(inArray(tripDays.tripId, ids))
+        .groupBy(tripDays.tripId)
+        .all()
+    ).map((r) => [r.tripId, r.n]),
   );
   const destCounts = new Map(
-    db
-      .select({ tripId: destinations.tripId, n: count() })
-      .from(destinations)
-      .where(inArray(destinations.tripId, ids))
-      .groupBy(destinations.tripId)
-      .all()
-      .map((r) => [r.tripId, r.n]),
+    (
+      await db
+        .select({ tripId: destinations.tripId, n: count() })
+        .from(destinations)
+        .where(inArray(destinations.tripId, ids))
+        .groupBy(destinations.tripId)
+        .all()
+    ).map((r) => [r.tripId, r.n]),
   );
   return rows.map((r) => ({
     id: r.id,
@@ -50,18 +52,18 @@ export function listTrips(db: DbOrTx): TripSummary[] {
   }));
 }
 
-export function getTripAggregate(db: DbOrTx, tripId: string): TripAggregate {
-  const trip = db.select().from(trips).where(eq(trips.id, tripId)).get();
+export async function getTripAggregate(db: DbOrTx, tripId: string): Promise<TripAggregate> {
+  const trip = await db.select().from(trips).where(eq(trips.id, tripId)).get();
   if (!trip) throw notFound("Trip", tripId);
-  const prefs = db.select().from(tripPreferences).where(eq(tripPreferences.tripId, tripId)).get();
-  const days = db
+  const prefs = await db.select().from(tripPreferences).where(eq(tripPreferences.tripId, tripId)).get();
+  const days = await db
     .select()
     .from(tripDays)
     .where(eq(tripDays.tripId, tripId))
     .orderBy(asc(tripDays.dayIndex))
     .all();
   const items = days.length
-    ? db
+    ? await db
         .select()
         .from(itineraryItems)
         .where(
@@ -73,7 +75,7 @@ export function getTripAggregate(db: DbOrTx, tripId: string): TripAggregate {
         .orderBy(asc(itineraryItems.position))
         .all()
     : [];
-  const dests = db
+  const dests = await db
     .select()
     .from(destinations)
     .where(eq(destinations.tripId, tripId))
@@ -120,7 +122,7 @@ function targetDayCount(
   return dayCount ?? 1;
 }
 
-function insertDays(
+async function insertDays(
   tx: DbOrTx,
   tripId: string,
   fromIndex: number,
@@ -129,7 +131,8 @@ function insertDays(
 ) {
   const t = now();
   for (let i = fromIndex; i < toIndexExclusive; i++) {
-    tx.insert(tripDays)
+    await tx
+      .insert(tripDays)
       .values({
         id: newId(),
         tripId,
@@ -142,7 +145,7 @@ function insertDays(
   }
 }
 
-export function createTrip(db: Db, input: CreateTripInput): TripAggregate {
+export async function createTrip(db: Db, input: CreateTripInput): Promise<TripAggregate> {
   const id = newId();
   const t = now();
   const startDate = input.startDate ?? null;
@@ -150,8 +153,9 @@ export function createTrip(db: Db, input: CreateTripInput): TripAggregate {
   const days = targetDayCount(startDate, endDate, input.dayCount);
   if (days > 60) throw new OrbiError("validation", "A trip can have at most 60 days");
 
-  db.transaction((tx) => {
-    tx.insert(trips)
+  await db.transaction(async (tx) => {
+    await tx
+      .insert(trips)
       .values({
         id,
         name: input.name,
@@ -169,28 +173,29 @@ export function createTrip(db: Db, input: CreateTripInput): TripAggregate {
         updatedAt: t,
       })
       .run();
-    tx.insert(tripPreferences)
+    await tx
+      .insert(tripPreferences)
       .values({ tripId: id, ...defaultPreferences(), ...input.preferences, updatedAt: t })
       .run();
-    insertDays(tx, id, 0, days, startDate);
+    await insertDays(tx, id, 0, days, startDate);
   });
-  return getTripAggregate(db, id);
+  return await getTripAggregate(db, id);
 }
 
-export function updateTrip(
+export async function updateTrip(
   db: Db,
   tripId: string,
   input: UpdateTripInput,
   expectedRevision?: number,
-): TripAggregate {
-  db.transaction((tx) => {
-    const current = tx.select().from(trips).where(eq(trips.id, tripId)).get();
+): Promise<TripAggregate> {
+  await db.transaction(async (tx) => {
+    const current = await tx.select().from(trips).where(eq(trips.id, tripId)).get();
     if (!current) throw notFound("Trip", tripId);
-    touchTrip(tx, tripId, expectedRevision);
+    await touchTrip(tx, tripId, expectedRevision);
 
     const { confirmRemoveDays, dayCount, ...fields } = input;
     if (fields.originDestinationId) {
-      const dest = tx
+      const dest = await tx
         .select()
         .from(destinations)
         .where(eq(destinations.id, fields.originDestinationId))
@@ -199,12 +204,12 @@ export function updateTrip(
     }
 
     const datesTouched = "startDate" in fields || "endDate" in fields || dayCount !== undefined;
-    if (Object.keys(fields).length) tx.update(trips).set(fields).where(eq(trips.id, tripId)).run();
+    if (Object.keys(fields).length) await tx.update(trips).set(fields).where(eq(trips.id, tripId)).run();
     if (!datesTouched) return;
 
     const startDate = "startDate" in fields ? (fields.startDate ?? null) : current.startDate;
     const endDate = "endDate" in fields ? (fields.endDate ?? null) : current.endDate;
-    const existing = tx
+    const existing = await tx
       .select()
       .from(tripDays)
       .where(eq(tripDays.tripId, tripId))
@@ -216,11 +221,11 @@ export function updateTrip(
     if (target < existing.length) {
       const removed = existing.slice(target);
       const removedIds = removed.map((d) => d.id);
-      const [{ n }] = tx
+      const [{ n }] = (await tx
         .select({ n: count() })
         .from(itineraryItems)
         .where(inArray(itineraryItems.tripDayId, removedIds))
-        .all() as [{ n: number }];
+        .all()) as [{ n: number }];
       if (n > 0 && !confirmRemoveDays) {
         throw new OrbiError(
           "confirmation_required",
@@ -228,44 +233,47 @@ export function updateTrip(
           { removedDayIds: removedIds, scheduledItems: n },
         );
       }
-      tx.delete(tripDays)
+      await tx
+        .delete(tripDays)
         .where(and(eq(tripDays.tripId, tripId), gte(tripDays.dayIndex, target)))
         .run();
     } else if (target > existing.length) {
-      insertDays(tx, tripId, existing.length, target, startDate);
+      await insertDays(tx, tripId, existing.length, target, startDate);
     }
 
     const t = now();
     for (const day of existing.slice(0, target)) {
-      tx.update(tripDays)
+      await tx
+        .update(tripDays)
         .set({ date: startDate ? addDays(startDate, day.dayIndex) : null, updatedAt: t })
         .where(eq(tripDays.id, day.id))
         .run();
     }
   });
-  return getTripAggregate(db, tripId);
+  return await getTripAggregate(db, tripId);
 }
 
-export function deleteTrip(db: Db, tripId: string, expectedRevision?: number): void {
-  db.transaction((tx) => {
-    touchTrip(tx, tripId, expectedRevision);
-    tx.delete(trips).where(eq(trips.id, tripId)).run();
+export async function deleteTrip(db: Db, tripId: string, expectedRevision?: number): Promise<void> {
+  await db.transaction(async (tx) => {
+    await touchTrip(tx, tripId, expectedRevision);
+    await tx.delete(trips).where(eq(trips.id, tripId)).run();
   });
 }
 
-export function putPreferences(
+export async function putPreferences(
   db: Db,
   tripId: string,
   prefs: TripPreferences,
   expectedRevision?: number,
-): TripAggregate {
-  db.transaction((tx) => {
-    touchTrip(tx, tripId, expectedRevision);
+): Promise<TripAggregate> {
+  await db.transaction(async (tx) => {
+    await touchTrip(tx, tripId, expectedRevision);
     const values = { ...prefs, updatedAt: now() };
-    tx.insert(tripPreferences)
+    await tx
+      .insert(tripPreferences)
       .values({ tripId, ...values })
       .onConflictDoUpdate({ target: tripPreferences.tripId, set: values })
       .run();
   });
-  return getTripAggregate(db, tripId);
+  return await getTripAggregate(db, tripId);
 }

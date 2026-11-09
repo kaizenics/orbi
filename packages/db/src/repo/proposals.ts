@@ -25,8 +25,8 @@ function toProposal(row: typeof aiProposals.$inferSelect): Proposal {
 }
 
 /** Stores an AI proposal against the trip's current revision. Nothing in the itinerary changes. */
-export function createProposal(db: Db, tripId: string, payload: ProposalPayload): Proposal {
-  const trip = db.select({ revision: trips.revision }).from(trips).where(eq(trips.id, tripId)).get();
+export async function createProposal(db: Db, tripId: string, payload: ProposalPayload): Promise<Proposal> {
+  const trip = await db.select({ revision: trips.revision }).from(trips).where(eq(trips.id, tripId)).get();
   if (!trip) throw notFound("Trip", tripId);
   const row = {
     id: newId(),
@@ -39,31 +39,35 @@ export function createProposal(db: Db, tripId: string, payload: ProposalPayload)
     conversationId: null,
     resolvedAt: null,
   };
-  db.insert(aiProposals).values(row).run();
+  await db.insert(aiProposals).values(row).run();
   return toProposal(row);
 }
 
-export function getProposal(db: DbOrTx, id: string): Proposal {
-  const row = db.select().from(aiProposals).where(eq(aiProposals.id, id)).get();
+export async function getProposal(db: DbOrTx, id: string): Promise<Proposal> {
+  const row = await db.select().from(aiProposals).where(eq(aiProposals.id, id)).get();
   if (!row) throw notFound("Proposal", id);
   return toProposal(row);
 }
 
-export function discardProposal(db: Db, id: string): Proposal {
-  const proposal = getProposal(db, id);
+export async function discardProposal(db: Db, id: string): Promise<Proposal> {
+  const proposal = await getProposal(db, id);
   if (proposal.status !== "pending")
     throw new OrbiError("conflict", `Proposal is already ${proposal.status}`);
-  db.update(aiProposals).set({ status: "discarded", resolvedAt: now() }).where(eq(aiProposals.id, id)).run();
+  await db
+    .update(aiProposals)
+    .set({ status: "discarded", resolvedAt: now() })
+    .where(eq(aiProposals.id, id))
+    .run();
   return { ...proposal, status: "discarded" };
 }
 
 /** Creates (or reuses, by provider reference) the trip destination for an AI-proposed stop. */
-function destinationFor(tx: DbOrTx, tripId: string, stop: ProposedStop): string {
+async function destinationFor(tx: DbOrTx, tripId: string, stop: ProposedStop): Promise<string> {
   const loc = stop.location;
   if (!loc)
     throw new OrbiError("validation", `"${stop.name}" has no verified location; remove it before applying`);
   if (loc.sourceRef) {
-    const existing = tx
+    const existing = await tx
       .select({ id: destinations.id })
       .from(destinations)
       .where(and(eq(destinations.tripId, tripId), eq(destinations.sourceRef, loc.sourceRef)))
@@ -72,7 +76,8 @@ function destinationFor(tx: DbOrTx, tripId: string, stop: ProposedStop): string 
   }
   const t = now();
   const id = newId();
-  tx.insert(destinations)
+  await tx
+    .insert(destinations)
     .values({
       id,
       tripId,
@@ -101,21 +106,25 @@ function destinationFor(tx: DbOrTx, tripId: string, stop: ProposedStop): string 
  * or edit operation indexes the user unticked. Fails with 409 if the trip changed since the
  * proposal was made, marking the proposal stale.
  */
-export function applyProposal(db: Db, id: string, exclude: readonly string[]): Proposal {
-  const proposal = getProposal(db, id);
+export async function applyProposal(db: Db, id: string, exclude: readonly string[]): Promise<Proposal> {
+  const proposal = await getProposal(db, id);
   if (proposal.status !== "pending")
     throw new OrbiError("conflict", `Proposal is already ${proposal.status}`);
   const skip = new Set(exclude);
 
-  const stale = db.transaction((tx) => {
-    const trip = tx
+  const stale = await db.transaction(async (tx) => {
+    const trip = await tx
       .select({ revision: trips.revision })
       .from(trips)
       .where(eq(trips.id, proposal.tripId))
       .get();
     if (!trip) throw notFound("Trip", proposal.tripId);
     if (trip.revision !== proposal.baseRevision) {
-      tx.update(aiProposals).set({ status: "stale", resolvedAt: now() }).where(eq(aiProposals.id, id)).run();
+      await tx
+        .update(aiProposals)
+        .set({ status: "stale", resolvedAt: now() })
+        .where(eq(aiProposals.id, id))
+        .run();
       return true;
     }
 
@@ -127,30 +136,34 @@ export function applyProposal(db: Db, id: string, exclude: readonly string[]): P
         for (const stop of day.stops) {
           total++;
           if (skip.has(stop.key)) continue;
-          insertItem(tx, day.dayId, destinationFor(tx, proposal.tripId, stop), {});
+          await insertItem(tx, day.dayId, await destinationFor(tx, proposal.tripId, stop), {});
           applied++;
         }
       }
     } else {
-      payload.operations.forEach((op, i) => {
+      for (const [i, op] of payload.operations.entries()) {
         total++;
-        if (skip.has(String(i))) return;
-        if (op.op === "move") moveItem(tx, op.itemId, { toDayId: op.toDayId, toPosition: op.toPosition });
-        else if (op.op === "remove") deleteItem(tx, op.itemId);
+        if (skip.has(String(i))) continue;
+        if (op.op === "move")
+          await moveItem(tx, op.itemId, { toDayId: op.toDayId, toPosition: op.toPosition });
+        else if (op.op === "remove") await deleteItem(tx, op.itemId);
         else if (op.op === "add") {
-          insertItem(tx, op.dayId, destinationFor(tx, proposal.tripId, op.stop), { position: op.toPosition });
+          await insertItem(tx, op.dayId, await destinationFor(tx, proposal.tripId, op.stop), {
+            position: op.toPosition,
+          });
         } else {
-          updateItem(tx, op.itemId, { fixedStartTime: op.fixedStartTime, notes: op.notes });
+          await updateItem(tx, op.itemId, { fixedStartTime: op.fixedStartTime, notes: op.notes });
           if (op.visitDurationMin !== null)
-            updateDestination(tx, op.destinationId, { visitDurationMin: op.visitDurationMin });
+            await updateDestination(tx, op.destinationId, { visitDurationMin: op.visitDurationMin });
         }
         applied++;
-      });
+      }
     }
     if (applied === 0) throw new OrbiError("validation", "Nothing selected to apply");
 
-    touchTrip(tx, proposal.tripId);
-    tx.update(aiProposals)
+    await touchTrip(tx, proposal.tripId);
+    await tx
+      .update(aiProposals)
       .set({ status: applied === total ? "applied" : "partially_applied", resolvedAt: now() })
       .where(eq(aiProposals.id, id))
       .run();
@@ -162,5 +175,5 @@ export function applyProposal(db: Db, id: string, exclude: readonly string[]): P
       proposalStatus: "stale",
     });
   }
-  return getProposal(db, id);
+  return await getProposal(db, id);
 }

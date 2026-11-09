@@ -1,79 +1,80 @@
-import Database from "better-sqlite3";
-import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
-import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { createClient, type Client } from "@libsql/client";
+import { drizzle, type LibSQLDatabase } from "drizzle-orm/libsql";
+import { migrate } from "drizzle-orm/libsql/migrator";
+import { mkdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as schema from "./schema.ts";
 
-export type Db = BetterSQLite3Database<typeof schema>;
+export type Db = LibSQLDatabase<typeof schema>;
 /** A transaction handle; repositories accept either. */
 export type DbOrTx = Db | Parameters<Parameters<Db["transaction"]>[0]>[0];
 
 const migrationsFolder = join(dirname(fileURLToPath(import.meta.url)), "..", "migrations");
 
-function openSqlite(path: string) {
-  if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
-  const sqlite = new Database(path);
-  sqlite.pragma("foreign_keys = ON");
-  sqlite.pragma("busy_timeout = 5000");
-  if (path !== ":memory:") {
-    sqlite.pragma("journal_mode = WAL");
-    sqlite.pragma("synchronous = NORMAL");
-  }
-  return sqlite;
-}
-
-function pendingMigrationCount(sqlite: Database.Database): number {
-  const journal = JSON.parse(readFileSync(join(migrationsFolder, "meta", "_journal.json"), "utf8")) as {
-    entries: unknown[];
-  };
-  const hasTable = sqlite
-    .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = '__drizzle_migrations'")
-    .get();
-  const applied = hasTable
-    ? (sqlite.prepare("SELECT count(*) AS n FROM __drizzle_migrations").get() as { n: number }).n
-    : 0;
-  return journal.entries.length - applied;
-}
-
 export interface OpenDbOptions {
-  /** Apply pending migrations (default true). */
+  /** libSQL URL: "file:./data/orbi.db" (local), "libsql://<db>.turso.io" (Turso) or ":memory:". */
+  url: string;
+  /** Turso auth token (remote databases only). */
+  authToken?: string;
+  /**
+   * Apply pending migrations on open. Defaults to true for local files and false for remote
+   * databases, which are migrated explicitly with `pnpm --filter @orbi/db db:migrate`.
+   */
   migrate?: boolean;
-  /** Directory for pre-migration backups; defaults to `<db dir>/backups`. */
-  backupDir?: string;
 }
 
 export interface OpenedDb {
   db: Db;
+  client: Client;
   close: () => void;
   backupPath: string | null;
 }
 
-/**
- * Opens (creating if needed) the SQLite database. Before applying migrations to an existing
- * database, writes a consistent copy with `VACUUM INTO` so a bad migration is recoverable.
- */
-export function openDb(path: string, options: OpenDbOptions = {}): OpenedDb {
-  const isNewFile = path === ":memory:" || !existsSync(path);
-  const sqlite = openSqlite(path);
-  const db = drizzle(sqlite, { schema });
-  let backupPath: string | null = null;
+const isLocal = (url: string) => url === ":memory:" || url.startsWith("file:");
+const localPath = (url: string) => url.replace(/^file:/, "");
 
-  if (options.migrate !== false && pendingMigrationCount(sqlite) > 0) {
-    if (!isNewFile) {
-      const dir = options.backupDir ?? join(dirname(path), "backups");
+async function pendingMigrationCount(client: Client): Promise<number> {
+  const journal = JSON.parse(readFileSync(join(migrationsFolder, "meta", "_journal.json"), "utf8")) as {
+    entries: unknown[];
+  };
+  const table = await client.execute(
+    "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = '__drizzle_migrations'",
+  );
+  if (table.rows.length === 0) return journal.entries.length;
+  const applied = await client.execute("SELECT count(*) AS n FROM __drizzle_migrations");
+  return journal.entries.length - Number(applied.rows[0]?.n ?? 0);
+}
+
+/**
+ * Opens the database. For local files, pending migrations run after a consistent copy is written
+ * with VACUUM INTO, so a bad migration is recoverable (Turso keeps its own point-in-time backups).
+ */
+export async function openDb(options: OpenDbOptions): Promise<OpenedDb> {
+  const local = isLocal(options.url);
+  if (local && options.url !== ":memory:") mkdirSync(dirname(localPath(options.url)), { recursive: true });
+  const client = createClient({ url: options.url, authToken: options.authToken });
+  await client.execute("PRAGMA foreign_keys = ON");
+  if (local && options.url !== ":memory:") await client.execute("PRAGMA journal_mode = WAL");
+  const db = drizzle(client, { schema });
+
+  let backupPath: string | null = null;
+  if ((options.migrate ?? local) && (await pendingMigrationCount(client)) > 0) {
+    const hasData =
+      (await client.execute("SELECT 1 FROM sqlite_master WHERE name = 'trips'")).rows.length > 0;
+    if (local && options.url !== ":memory:" && hasData) {
+      const dir = join(dirname(localPath(options.url)), "backups");
       mkdirSync(dir, { recursive: true });
       backupPath = join(dir, `orbi-${new Date().toISOString().replace(/[:.]/g, "-")}.db`);
-      sqlite.prepare("VACUUM INTO ?").run(backupPath);
+      await client.execute({ sql: "VACUUM INTO ?", args: [backupPath] });
     }
-    migrate(db, { migrationsFolder });
+    await migrate(db, { migrationsFolder });
   }
 
-  return { db, close: () => sqlite.close(), backupPath };
+  return { db, client, close: () => client.close(), backupPath };
 }
 
 /** Fresh in-memory database with migrations applied — one per test. */
-export function createTestDb(): Db {
-  return openDb(":memory:").db;
+export async function createTestDb(): Promise<Db> {
+  return (await openDb({ url: ":memory:" })).db;
 }

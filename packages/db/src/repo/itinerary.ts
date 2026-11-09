@@ -1,4 +1,4 @@
-import { asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import {
   DEFAULTS,
   LIMITS,
@@ -26,36 +26,37 @@ export interface Mutation<T> {
   revision: number;
 }
 
-function getDestinationOrThrow(tx: DbOrTx, id: string) {
-  const row = tx.select().from(destinations).where(eq(destinations.id, id)).get();
+async function getDestinationOrThrow(tx: DbOrTx, id: string) {
+  const row = await tx.select().from(destinations).where(eq(destinations.id, id)).get();
   if (!row) throw notFound("Destination", id);
   return row;
 }
 
-function getItemOrThrow(tx: DbOrTx, id: string) {
-  const row = tx.select().from(itineraryItems).where(eq(itineraryItems.id, id)).get();
+async function getItemOrThrow(tx: DbOrTx, id: string) {
+  const row = await tx.select().from(itineraryItems).where(eq(itineraryItems.id, id)).get();
   if (!row) throw notFound("Itinerary item", id);
   return row;
 }
 
-function assertDayHasRoom(tx: DbOrTx, dayId: string) {
-  if (dayItemIds(tx, dayId).length >= LIMITS.maxItemsPerDay) {
+async function assertDayHasRoom(tx: DbOrTx, dayId: string) {
+  if ((await dayItemIds(tx, dayId)).length >= LIMITS.maxItemsPerDay) {
     throw new OrbiError("validation", `A day can hold at most ${LIMITS.maxItemsPerDay} stops`);
   }
 }
 
 /** Inserts an item at `position` (default: end) and re-packs the day. */
-export function insertItem(
+export async function insertItem(
   tx: DbOrTx,
   dayId: string,
   destinationId: string,
   fields: Omit<CreateItemInput, "destinationId">,
-): string {
-  assertDayHasRoom(tx, dayId);
-  const ids = dayItemIds(tx, dayId);
+): Promise<string> {
+  await assertDayHasRoom(tx, dayId);
+  const ids = await dayItemIds(tx, dayId);
   const id = newId();
   const t = now();
-  tx.insert(itineraryItems)
+  await tx
+    .insert(itineraryItems)
     .values({
       id,
       tripDayId: dayId,
@@ -70,7 +71,7 @@ export function insertItem(
     .run();
   const at = Math.min(fields.position ?? ids.length, ids.length);
   ids.splice(at, 0, id);
-  writePositions(tx, dayId, ids);
+  await writePositions(tx, dayId, ids);
   return id;
 }
 
@@ -78,22 +79,21 @@ export function insertItem(
 // Destinations
 // ---------------------------------------------------------------------------
 
-export function createDestination(
+export async function createDestination(
   db: DbOrTx,
   tripId: string,
   input: CreateDestinationInput,
   expectedRevision?: number,
-): Mutation<Destination> {
-  return db.transaction((tx) => {
-    const revision = touchTrip(tx, tripId, expectedRevision);
+): Promise<Mutation<Destination>> {
+  return db.transaction(async (tx) => {
+    const revision = await touchTrip(tx, tripId, expectedRevision);
     const { dayId, ...fields } = input;
     if (fields.sourceRef) {
-      const dup = tx
+      const dup = await tx
         .select({ id: destinations.id, tripId: destinations.tripId, sourceRef: destinations.sourceRef })
         .from(destinations)
-        .where(eq(destinations.sourceRef, fields.sourceRef))
-        .all()
-        .find((d) => d.tripId === tripId);
+        .where(and(eq(destinations.sourceRef, fields.sourceRef), eq(destinations.tripId, tripId)))
+        .get();
       if (dup) {
         throw new OrbiError("conflict", "This place is already in the trip", { destinationId: dup.id });
       }
@@ -121,50 +121,50 @@ export function createDestination(
       createdAt: t,
       updatedAt: t,
     };
-    tx.insert(destinations).values(row).run();
+    await tx.insert(destinations).values(row).run();
     if (dayId) {
-      const day = getDayOrThrow(tx, dayId);
+      const day = await getDayOrThrow(tx, dayId);
       if (day.tripId !== tripId) throw notFound("Day", dayId);
-      insertItem(tx, dayId, row.id, {});
+      await insertItem(tx, dayId, row.id, {});
     }
     return { value: row, revision };
   });
 }
 
-export function updateDestination(
+export async function updateDestination(
   db: DbOrTx,
   id: string,
   input: UpdateDestinationInput,
   expectedRevision?: number,
-): Mutation<Destination> {
-  return db.transaction((tx) => {
-    const current = getDestinationOrThrow(tx, id);
-    const revision = touchTrip(tx, current.tripId, expectedRevision);
+): Promise<Mutation<Destination>> {
+  return db.transaction(async (tx) => {
+    const current = await getDestinationOrThrow(tx, id);
+    const revision = await touchTrip(tx, current.tripId, expectedRevision);
     const t = now();
     const coordsChanged = input.latitude !== undefined;
     const set = { ...input, updatedAt: t, ...(coordsChanged ? { locationVerifiedAt: t } : {}) };
-    tx.update(destinations).set(set).where(eq(destinations.id, id)).run();
-    return { value: getDestinationOrThrow(tx, id), revision };
+    await tx.update(destinations).set(set).where(eq(destinations.id, id)).run();
+    return { value: await getDestinationOrThrow(tx, id), revision };
   });
 }
 
 /** Deletes a destination, its scheduled occurrences (cascade), and re-packs affected days. */
-export function deleteDestination(db: DbOrTx, id: string, expectedRevision?: number): Mutation<null> {
-  return db.transaction((tx) => {
-    const current = getDestinationOrThrow(tx, id);
-    const revision = touchTrip(tx, current.tripId, expectedRevision);
-    const affectedDays = [
-      ...new Set(
-        tx
-          .select({ dayId: itineraryItems.tripDayId })
-          .from(itineraryItems)
-          .where(eq(itineraryItems.destinationId, id))
-          .all()
-          .map((r) => r.dayId),
-      ),
-    ];
-    tx.delete(destinations).where(eq(destinations.id, id)).run();
-    for (const dayId of affectedDays) writePositions(tx, dayId, dayItemIds(tx, dayId));
+export async function deleteDestination(
+  db: DbOrTx,
+  id: string,
+  expectedRevision?: number,
+): Promise<Mutation<null>> {
+  return db.transaction(async (tx) => {
+    const current = await getDestinationOrThrow(tx, id);
+    const revision = await touchTrip(tx, current.tripId, expectedRevision);
+    const occurrences = await tx
+      .select({ dayId: itineraryItems.tripDayId })
+      .from(itineraryItems)
+      .where(eq(itineraryItems.destinationId, id))
+      .all();
+    const affectedDays = [...new Set(occurrences.map((r) => r.dayId))];
+    await tx.delete(destinations).where(eq(destinations.id, id)).run();
+    for (const dayId of affectedDays) await writePositions(tx, dayId, await dayItemIds(tx, dayId));
     return { value: null, revision };
   });
 }
@@ -173,20 +173,21 @@ export function deleteDestination(db: DbOrTx, id: string, expectedRevision?: num
 // Days
 // ---------------------------------------------------------------------------
 
-export function updateDay(
+export async function updateDay(
   db: DbOrTx,
   dayId: string,
   input: UpdateDayInput,
   expectedRevision?: number,
-): Mutation<TripDay> {
-  return db.transaction((tx) => {
-    const day = getDayOrThrow(tx, dayId);
-    const revision = touchTrip(tx, day.tripId, expectedRevision);
-    tx.update(tripDays)
+): Promise<Mutation<TripDay>> {
+  return db.transaction(async (tx) => {
+    const day = await getDayOrThrow(tx, dayId);
+    const revision = await touchTrip(tx, day.tripId, expectedRevision);
+    await tx
+      .update(tripDays)
       .set({ ...input, updatedAt: now() })
       .where(eq(tripDays.id, dayId))
       .run();
-    return { value: toDay(getDayOrThrow(tx, dayId)), revision };
+    return { value: toDay(await getDayOrThrow(tx, dayId)), revision };
   });
 }
 
@@ -194,64 +195,65 @@ export function updateDay(
 // Itinerary items
 // ---------------------------------------------------------------------------
 
-export function createItem(
+export async function createItem(
   db: DbOrTx,
   dayId: string,
   input: CreateItemInput,
   expectedRevision?: number,
-): Mutation<ItineraryItem> {
-  return db.transaction((tx) => {
-    const day = getDayOrThrow(tx, dayId);
-    const dest = getDestinationOrThrow(tx, input.destinationId);
+): Promise<Mutation<ItineraryItem>> {
+  return db.transaction(async (tx) => {
+    const day = await getDayOrThrow(tx, dayId);
+    const dest = await getDestinationOrThrow(tx, input.destinationId);
     // Same-trip invariant (database.md §4.5): enforced here, the single choke point.
     if (dest.tripId !== day.tripId) throw notFound("Destination", input.destinationId);
-    const revision = touchTrip(tx, day.tripId, expectedRevision);
+    const revision = await touchTrip(tx, day.tripId, expectedRevision);
     const { destinationId, ...fields } = input;
-    const id = insertItem(tx, dayId, destinationId, fields);
-    return { value: toItem(getItemOrThrow(tx, id)), revision };
+    const id = await insertItem(tx, dayId, destinationId, fields);
+    return { value: toItem(await getItemOrThrow(tx, id)), revision };
   });
 }
 
-export function updateItem(
+export async function updateItem(
   db: DbOrTx,
   id: string,
   input: UpdateItemInput,
   expectedRevision?: number,
-): Mutation<ItineraryItem> {
-  return db.transaction((tx) => {
-    const item = getItemOrThrow(tx, id);
-    const day = getDayOrThrow(tx, item.tripDayId);
-    const revision = touchTrip(tx, day.tripId, expectedRevision);
-    tx.update(itineraryItems)
+): Promise<Mutation<ItineraryItem>> {
+  return db.transaction(async (tx) => {
+    const item = await getItemOrThrow(tx, id);
+    const day = await getDayOrThrow(tx, item.tripDayId);
+    const revision = await touchTrip(tx, day.tripId, expectedRevision);
+    await tx
+      .update(itineraryItems)
       .set({ ...input, updatedAt: now() })
       .where(eq(itineraryItems.id, id))
       .run();
-    return { value: toItem(getItemOrThrow(tx, id)), revision };
+    return { value: toItem(await getItemOrThrow(tx, id)), revision };
   });
 }
 
 /** Unschedules an occurrence; the destination stays in the trip's ideas list. */
-export function deleteItem(db: DbOrTx, id: string, expectedRevision?: number): Mutation<null> {
-  return db.transaction((tx) => {
-    const item = getItemOrThrow(tx, id);
-    const day = getDayOrThrow(tx, item.tripDayId);
-    const revision = touchTrip(tx, day.tripId, expectedRevision);
-    tx.delete(itineraryItems).where(eq(itineraryItems.id, id)).run();
-    writePositions(tx, day.id, dayItemIds(tx, day.id));
+export async function deleteItem(db: DbOrTx, id: string, expectedRevision?: number): Promise<Mutation<null>> {
+  return db.transaction(async (tx) => {
+    const item = await getItemOrThrow(tx, id);
+    const day = await getDayOrThrow(tx, item.tripDayId);
+    const revision = await touchTrip(tx, day.tripId, expectedRevision);
+    await tx.delete(itineraryItems).where(eq(itineraryItems.id, id)).run();
+    await writePositions(tx, day.id, await dayItemIds(tx, day.id));
     return { value: null, revision };
   });
 }
 
 /** Idempotent reorder: `itemIds` must be exactly the day's current items, in the new order. */
-export function reorderDay(
+export async function reorderDay(
   db: DbOrTx,
   dayId: string,
   itemIds: readonly string[],
   expectedRevision?: number,
-): Mutation<ItineraryItem[]> {
-  return db.transaction((tx) => {
-    const day = getDayOrThrow(tx, dayId);
-    const current = dayItemIds(tx, dayId);
+): Promise<Mutation<ItineraryItem[]>> {
+  return db.transaction(async (tx) => {
+    const day = await getDayOrThrow(tx, dayId);
+    const current = await dayItemIds(tx, dayId);
     const same =
       current.length === itemIds.length &&
       new Set(itemIds).size === itemIds.length &&
@@ -261,28 +263,28 @@ export function reorderDay(
         currentItemIds: current,
       });
     }
-    const revision = touchTrip(tx, day.tripId, expectedRevision);
-    writePositions(tx, dayId, itemIds);
-    return { value: listDayItems(tx, dayId), revision };
+    const revision = await touchTrip(tx, day.tripId, expectedRevision);
+    await writePositions(tx, dayId, itemIds);
+    return { value: await listDayItems(tx, dayId), revision };
   });
 }
 
 /** Moves an item to another day (or another position on the same day). */
-export function moveItem(
+export async function moveItem(
   db: DbOrTx,
   id: string,
   input: MoveItemInput,
   expectedRevision?: number,
-): Mutation<ItineraryItem> {
-  return db.transaction((tx) => {
-    const item = getItemOrThrow(tx, id);
-    const from = getDayOrThrow(tx, item.tripDayId);
-    const to = getDayOrThrow(tx, input.toDayId);
+): Promise<Mutation<ItineraryItem>> {
+  return db.transaction(async (tx) => {
+    const item = await getItemOrThrow(tx, id);
+    const from = await getDayOrThrow(tx, item.tripDayId);
+    const to = await getDayOrThrow(tx, input.toDayId);
     if (to.tripId !== from.tripId) throw notFound("Day", input.toDayId);
-    const revision = touchTrip(tx, from.tripId, expectedRevision);
+    const revision = await touchTrip(tx, from.tripId, expectedRevision);
 
-    const source = dayItemIds(tx, from.id).filter((i) => i !== id);
-    const target = from.id === to.id ? source : dayItemIds(tx, to.id);
+    const source = (await dayItemIds(tx, from.id)).filter((i) => i !== id);
+    const target = from.id === to.id ? source : await dayItemIds(tx, to.id);
     if (from.id !== to.id && target.length >= LIMITS.maxItemsPerDay) {
       throw new OrbiError("validation", `A day can hold at most ${LIMITS.maxItemsPerDay} stops`);
     }
@@ -290,18 +292,18 @@ export function moveItem(
 
     if (from.id !== to.id) {
       // Park the moved item outside both days' position ranges before re-packing.
-      tx.update(itineraryItems).set({ position: -100_000 }).where(eq(itineraryItems.id, id)).run();
-      writePositions(tx, from.id, source);
+      await tx.update(itineraryItems).set({ position: -100_000 }).where(eq(itineraryItems.id, id)).run();
+      await writePositions(tx, from.id, source);
     }
-    writePositions(tx, to.id, target);
-    return { value: toItem(getItemOrThrow(tx, id)), revision };
+    await writePositions(tx, to.id, target);
+    return { value: toItem(await getItemOrThrow(tx, id)), revision };
   });
 }
 
-function listDayItems(tx: DbOrTx, dayId: string): ItineraryItem[] {
-  const ids = dayItemIds(tx, dayId);
+async function listDayItems(tx: DbOrTx, dayId: string): Promise<ItineraryItem[]> {
+  const ids = await dayItemIds(tx, dayId);
   if (!ids.length) return [];
-  const rows = tx.select().from(itineraryItems).where(inArray(itineraryItems.id, ids)).all();
+  const rows = await tx.select().from(itineraryItems).where(inArray(itineraryItems.id, ids)).all();
   return ids.map((i) => toItem(rows.find((r) => r.id === i)!));
 }
 
@@ -321,10 +323,14 @@ export interface DayStops {
 }
 
 /** The ordered stops of one day with coordinates: the authoritative input for route calculation. */
-export function getDayStops(db: DbOrTx, dayId: string): DayStops {
-  const day = getDayOrThrow(db, dayId);
-  const trip = db.select({ mode: trips.defaultTravelMode }).from(trips).where(eq(trips.id, day.tripId)).get();
-  const rows = db
+export async function getDayStops(db: DbOrTx, dayId: string): Promise<DayStops> {
+  const day = await getDayOrThrow(db, dayId);
+  const trip = await db
+    .select({ mode: trips.defaultTravelMode })
+    .from(trips)
+    .where(eq(trips.id, day.tripId))
+    .get();
+  const rows = await db
     .select({
       itemId: itineraryItems.id,
       destinationId: destinations.id,
