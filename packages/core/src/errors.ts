@@ -1,5 +1,11 @@
 export type OrbiErrorCode =
-  "not_found" | "conflict" | "validation" | "confirmation_required" | "provider_unavailable" | "rate_limited";
+  | "not_found"
+  | "conflict"
+  | "validation"
+  | "confirmation_required"
+  | "provider_unavailable"
+  | "rate_limited"
+  | "ai_output_invalid";
 
 /** A domain error with a stable machine-readable code; the API maps codes to HTTP statuses. */
 export class OrbiError extends Error {
