@@ -296,3 +296,17 @@ Deliberately out of ORBI's MVP scope (TREK has these): multi-user collaboration 
 - **Identity:** the web proxy removes any `x-orbi-user` header the browser sent and sets it from the verified Google session. The API scopes trip lists by it and checks, for every route that takes a trip, destination, day, item or proposal ID, that the record's trip belongs to the caller; other accounts get 404 so IDs are not revealed. Owner emails never appear in responses or exported files.
 - **Shortcut:** a caller holding `ORBI_API_TOKEN` (the Android app) may set `x-orbi-user` itself; the token is an owner-level secret.
 - **Fewer secrets:** `ORBI_SESSION_SECRET` dropped (the cookie key is derived from `GOOGLE_CLIENT_SECRET`); `ORBI_ALLOWED_EMAILS` removed: ORBI is public and any Google account can sign in.
+
+## 12. Travel chat (2026-11-09)
+
+- **Floating chat** (bottom-right on every app page) backed by `POST /ai/chat`, which streams newline-delimited JSON (`{text}` chunks, then `{trip}` or `{error}`). Uses the caller's own AI key from the browser, like drafts and edits; the server keeps no chat history.
+- **Travel only:** a regex pre-check refuses code requests and profanity without calling the model (zero tokens); the system prompt also limits the assistant to travel topics and forbids code.
+- **Token budget:** short system prompt, only the last 6 messages sent, answers asked to stay under 120 words, output capped at 3,000 tokens (room for a long pasted itinerary).
+- **Pasted itinerary → trip:** the model calls a `create_trip` tool with structured days and stops (same schema as AI drafts, no coordinates). The API creates the trip for the caller's account, geocodes each stop, and applies everything found; places the geocoder can't find are listed for the user. The stream ends after the tool call, so there is no second model call.
+
+## 13. Activities and detailed days (2026-11-10)
+
+- **Itinerary items are a place or an activity.** Activities (wake up, breakfast, lunch, dinner, snack, rest, free time, check in/out, transfer, other) have a title and duration but no destination, so they are not on the map and are never geocoded. Migration `0002_item_activities` makes `itinerary_items.destination_id` nullable and adds `activity_type` and `title`, with a check that a row is exactly one kind. Run `pnpm --filter @orbi/db db:migrate` on Turso before deploying.
+- **Scheduling:** routes still connect places only. `itemLegSeconds` (core) gives activities zero travel and places the leg from the previous place, so the timeline times stay correct with activities in between.
+- **AI:** drafts and the chat plan full days in time order (wake up, breakfast, sights, lunch, dinner, back to the hotel). Named restaurants and hotels are places; generic moments are activities. The `activity` field is optional in model output (missing = place) so models that omit it still validate.
+- **Web UI:** the day is a vertical timeline with numbered place markers and activity icons (both drag handles), travel pills between places, and an "Add activity" form.
