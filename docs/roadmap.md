@@ -121,14 +121,14 @@ Phases 3 and 4 overlap in practice (map and itinerary are one experience); they 
 
 **Acceptance criteria**
 
-- [ ] Schedule unit tests: fixed times, overruns past day end, unknown travel legs, zero-item and one-item days.
-- [ ] Reordering on web by mouse **and** keyboard updates order, map numbering and route within 1 s on a cached route.
-- [ ] Moving an item between days on mobile via both long-press drag and the “Move to day” action.
-- [ ] Tapping a marker scrolls to/highlights its card; tapping a card highlights and centres its marker (both platforms).
-- [ ] Failed reorder (server stopped) rolls back the UI and shows an error with retry.
-- [ ] Daily totals (travel time, visit time, estimated cost) match a hand-computed fixture trip.
-- [ ] Empty, loading and error states exist for trip list, day timeline, ideas list and map.
-- [ ] Axe (web) reports no serious/critical violations on the planner page.
+- [x] Schedule unit tests: fixed times, overruns past day end, unknown travel legs, zero-item and one-item days.
+- [x] Reordering on web by mouse **and** keyboard updates order, map numbering and route within 1 s on a cached route. _(verified 2026-11-09: keyboard reorder in Edge, persisted across reload with map and route updated; mouse drag uses the same handler but was not automated)_
+- [ ] Moving an item between days on mobile via both long-press drag and the “Move to day” action. _(Move up/down/to-day actions implemented; long-press drag deferred; nothing run on a device yet (Android build blocked))_
+- [ ] Tapping a marker scrolls to/highlights its card; tapping a card highlights and centres its marker (both platforms). _(web verified both directions; Android not run)_
+- [ ] Failed reorder (server stopped) rolls back the UI and shows an error with retry. _(optimistic update with rollback and error message implemented on web, not exercised against a stopped server)_
+- [x] Daily totals (travel time, visit time, estimated cost) match a hand-computed fixture trip. _(schedule and cost tests in packages/core)_
+- [x] Empty, loading and error states exist for trip list, day timeline, ideas list and map. _(web)_
+- [x] Axe (web) reports no serious/critical violations on the planner page. _(verified 2026-11-09: planner, stop editor and home page; fixed the muted-text contrast to pass)_
 
 ---
 
@@ -144,14 +144,14 @@ Phases 3 and 4 overlap in practice (map and itinerary are one experience); they 
 
 **Acceptance criteria**
 
-- [ ] The example prompt (“Plan a 3-day Cebu trip with a ₱10,000 budget… historical attractions, local food, and beaches”) yields a 3-day proposal where **every saved destination has provider-sourced coordinates**; unresolved places are flagged and cannot be applied until fixed/removed.
-- [ ] No AI output schema contains coordinate fields (enforced by a test over the schemas).
-- [ ] Nothing is written to itinerary tables until the user applies a proposal (integration test).
-- [ ] Edit prompts “Move the beach to day 2”, “Remove destinations that are too far apart”, “Add a restaurant near our hotel” produce operation lists (not regenerated itineraries) that pass validation on the seeded trip.
-- [ ] Applying a proposal after the trip changed returns 409 and the UI offers regeneration.
-- [ ] With Ollama stopped: AI UI shows “AI unavailable” with setup help; all other features work.
-- [ ] Eval set results recorded in `docs/ai-evals.md` (schema validity ≥ 90 % after repair retry on the chosen model — threshold to be confirmed after the spike).
-- [ ] AI-estimated costs/hours/durations are visibly labelled as estimates.
+- [ ] The example prompt (“Plan a 3-day Cebu trip with a ₱10,000 budget… historical attractions, local food, and beaches”) yields a 3-day proposal where **every saved destination has provider-sourced coordinates**; unresolved places are flagged and cannot be applied until fixed/removed. _(draft pipeline verified end to end with a stand-in model and live Nominatim; not yet run with a real model (needs your key))_
+- [x] No AI output schema contains coordinate fields (enforced by a test over the schemas).
+- [x] Nothing is written to itinerary tables until the user applies a proposal (integration test).
+- [ ] Edit prompts “Move the beach to day 2”, “Remove destinations that are too far apart”, “Add a restaurant near our hotel” produce operation lists (not regenerated itineraries) that pass validation on the seeded trip. _(operation mapping verified with a stand-in model; real-model behaviour untested)_
+- [x] Applying a proposal after the trip changed returns 409 and the UI offers regeneration. _(API test; the web panel explains and offers discarding)_
+- [x] With Ollama stopped: AI UI shows “AI unavailable” with setup help; all other features work. _(web shows 'AI assistant unavailable' with setup help; AI routes answer 503)_
+- [ ] Eval set results recorded in `docs/ai-evals.md` (schema validity ≥ 90 % after repair retry on the chosen model — threshold to be confirmed after the spike). _(script ready: pnpm --filter @orbi/server ai:eval; results pending a run with your model)_
+- [x] AI-estimated costs/hours/durations are visibly labelled as estimates.
 
 ---
 
@@ -168,10 +168,10 @@ Phases 3 and 4 overlap in practice (map and itinerary are one experience); they 
 
 **Acceptance criteria**
 
-- [ ] A fresh clone → running app in < 30 min following only the README (excluding model/map downloads), verified on Windows and one other OS.
-- [ ] `docker compose --profile full up` runs ORBI with self-hosted routing/geocoding/tiles for a sample region with no external calls except the initial data download.
-- [ ] E2E: create trip → add 3 destinations → reorder → route updates → AI draft (stubbed) → apply — green in CI.
-- [ ] Mobile shows the last-synced trip and routes in airplane mode.
+- [ ] A fresh clone → running app in < 30 min following only the README (excluding model/map downloads), verified on Windows and one other OS. _(not yet verified)_
+- [ ] `docker compose --profile full up` runs ORBI with self-hosted routing/geocoding/tiles for a sample region with no external calls except the initial data download. _(scope changed: infra/docker-compose.yml runs server + HTTPS (+ optional Ollama) for the VM deployment; image steps verified without Docker (not installed here); self-hosted map services are documented, not composed)_
+- [ ] E2E: create trip → add 3 destinations → reorder → route updates → AI draft (stubbed) → apply — green in CI. _(the same flow was run with Playwright locally; not yet a CI job)_
+- [ ] Mobile shows the last-synced trip and routes in airplane mode. _(not implemented)_
 - [ ] Owner completes the PRD success criteria (§8) on a real trip.
 
 ---

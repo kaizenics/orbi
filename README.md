@@ -9,9 +9,10 @@ before anything is saved.
 
 It runs on your own computer and needs no paid accounts or API keys.
 
-> **Status: early development (Phases 1–3 of 6).** Trips, days and destinations are stored and served by
-> the API; the web app shows each day on an interactive map with numbered stops and real road routes, and
-> can search for places and add them. Editing, scheduling and AI come next. See the [roadmap](./docs/roadmap.md).
+> **Status: MVP (Phases 1–6).** Plan trips day by day on a map with real road routes, reorder stops,
+> see arrival times and costs, and let AI (OpenRouter or local Ollama) draft or edit itineraries that you
+> review before saving. The Android app still needs its first device build. See the [roadmap](./docs/roadmap.md)
+> and the [deployment guide](./docs/deployment.md).
 
 ## What's in the repository
 
@@ -23,6 +24,7 @@ It runs on your own computer and needs no paid accounts or API keys.
 | `packages/core`  | Shared schemas, types and business logic (pure TypeScript)                                                                                                                                        |
 | `packages/api`   | The HTTP API (Hono), plus a typed client for the apps                                                                                                                                             |
 | `packages/db`    | Database schema, migrations and data access (SQLite + Drizzle)                                                                                                                                    |
+| `packages/ai`    | AI providers (OpenRouter, Ollama), prompts and itinerary pipelines                                                                                                                                |
 | `packages/geo`   | Geocoding/routing adapters (Nominatim, Photon, OSRM) and shared map utilities                                                                                                                     |
 | `packages/theme` | Design tokens shared by web and mobile                                                                                                                                                            |
 | `docs/`          | [Product requirements](./docs/PRD.md), [architecture](./docs/architecture.md), [database](./docs/database.md), [technical decisions](./docs/technical-decisions.md), [roadmap](./docs/roadmap.md) |
@@ -96,8 +98,14 @@ Phase 3) contains native code.
 | `pnpm boundaries`                    | Checks that packages only import what they declare (e.g. the apps can't import the database) |
 | `pnpm --filter @orbi/server db:seed` | Adds the demo trip (skips if it exists)                                                      |
 | `pnpm --filter @orbi/db db:generate` | Generates a SQL migration after a schema change                                              |
+| `pnpm --filter @orbi/server ai:eval` | Tries the configured AI model on sample prompts                                              |
 | `pnpm format`                        | Prettier                                                                                     |
 | `pnpm licenses:check`                | Fails if a dependency's licence isn't on the allow-list                                      |
+
+## Deploying
+
+Run the server on a free cloud VM with Docker and HTTPS, and the web app on Vercel: see
+[docs/deployment.md](./docs/deployment.md). Vercel and Netlify cannot host the server or Ollama.
 
 ## Cost
 
