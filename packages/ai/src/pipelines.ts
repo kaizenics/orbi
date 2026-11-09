@@ -1,4 +1,4 @@
-import { NoObjectGeneratedError, Output, generateText, type LanguageModel } from "ai";
+import { APICallError, NoObjectGeneratedError, Output, generateText, type LanguageModel } from "ai";
 import type { ZodType } from "zod";
 import {
   OrbiError,
@@ -49,6 +49,12 @@ async function structured<T>(
       });
       return result.output as T;
     } catch (error) {
+      if (APICallError.isInstance(error) && (error.statusCode === 401 || error.statusCode === 403)) {
+        throw new OrbiError(
+          "provider_unavailable",
+          "Your AI provider rejected the API key. Check it in Settings.",
+        );
+      }
       if (!NoObjectGeneratedError.isInstance(error)) {
         throw new OrbiError(
           "provider_unavailable",

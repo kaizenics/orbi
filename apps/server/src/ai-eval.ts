@@ -1,24 +1,22 @@
 /**
- * Model evaluation (roadmap Phase 5). Uses the AI and geocoder settings from apps/server/.env:
- *   pnpm --filter @orbi/server ai:eval
- * Sends a few sample requests, then reports schema validity, geocoder hit rate and latency.
- * Each prompt costs one or two AI requests (free OpenRouter models: ~50 requests/day) and about
- * 10–20 geocoder lookups at 1 per second, so a full run takes a few minutes.
+ * Model evaluation (roadmap Phase 5): try an AI provider/model with your own key on sample prompts.
+ *   AI_EVAL_PROVIDER=openrouter AI_EVAL_MODEL=<model> AI_EVAL_API_KEY=<key> pnpm --filter @orbi/server ai:eval
+ * Reports schema validity, geocoder hit rate and latency. Each prompt costs one or two AI requests
+ * and about 10–20 geocoder lookups at 1 per second, so a full run takes a few minutes.
  */
 import { createAiModel, generateDraft } from "@orbi/ai";
-import { OrbiError, type TripAggregate } from "@orbi/core";
+import { AI_PROVIDERS, OrbiError, type AiProvider, type TripAggregate } from "@orbi/core";
 import { createGeoProviders } from "@orbi/geo";
 import { parseEnv } from "@orbi/api";
 
 const env = parseEnv(process.env);
-if (!env.AI_PROVIDER || !env.AI_MODEL)
-  throw new Error("Set AI_PROVIDER and AI_MODEL in apps/server/.env first");
-const ai = createAiModel({
-  provider: env.AI_PROVIDER,
-  model: env.AI_MODEL,
-  apiKey: env.OPENROUTER_API_KEY,
-  baseUrl: env.OLLAMA_BASE_URL,
-});
+const provider = process.env.AI_EVAL_PROVIDER as AiProvider | undefined;
+const model = process.env.AI_EVAL_MODEL;
+const apiKey = process.env.AI_EVAL_API_KEY;
+if (!provider || !AI_PROVIDERS.includes(provider) || !model || !apiKey) {
+  throw new Error(`Set AI_EVAL_PROVIDER (${AI_PROVIDERS.join(", ")}), AI_EVAL_MODEL and AI_EVAL_API_KEY`);
+}
+const ai = createAiModel({ provider, model, apiKey });
 const geo = createGeoProviders({
   userAgent: env.GEO_USER_AGENT ?? "ORBI ai-eval (self-hosted; https://github.com/kaizenics/orbi)",
   contactEmail: env.GEO_CONTACT_EMAIL,

@@ -24,19 +24,24 @@ describe("parseEnv", () => {
     expect(() => parseEnv({ ORBI_API_TOKEN: "short" })).toThrow(/at least 16/);
   });
 
-  it("keeps AI off by default and validates AI settings together", () => {
-    expect(parseEnv({}).AI_PROVIDER).toBeUndefined();
-    expect(() => parseEnv({ AI_PROVIDER: "ollama" })).toThrow(/AI_MODEL: required/);
-    expect(() => parseEnv({ AI_PROVIDER: "openrouter", AI_MODEL: "x/y:free" })).toThrow(/OPENROUTER_API_KEY/);
-    expect(parseEnv({ AI_PROVIDER: "ollama", AI_MODEL: "qwen3:8b" }).OLLAMA_BASE_URL).toBe(
-      "http://127.0.0.1:11434",
-    );
-  });
-
   it("refuses a file database on Vercel", () => {
     expect(() => parseEnv({ VERCEL: "1" })).toThrow(/Turso/);
     expect(
-      parseEnv({ VERCEL: "1", ORBI_DATABASE_URL: "libsql://orbi.turso.io" }).ORBI_DATABASE_URL,
+      parseEnv({
+        VERCEL: "1",
+        ORBI_DATABASE_URL: "libsql://orbi.turso.io",
+      }).ORBI_DATABASE_URL,
     ).toContain("turso");
+  });
+
+  it("treats blank values (as copied from .env.example) as not set", () => {
+    const env = parseEnv({
+      ORBI_API_TOKEN: "",
+      ORBI_DATABASE_AUTH_TOKEN: "",
+      PHOTON_BASE_URL: "",
+      GEO_CONTACT_EMAIL: "",
+    });
+    expect(env.ORBI_API_TOKEN).toBeUndefined();
+    expect(env.ORBI_DATABASE_URL).toBe("file:./data/orbi.db");
   });
 });

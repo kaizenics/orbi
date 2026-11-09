@@ -2,7 +2,7 @@ import { z } from "zod";
 import { idSchema, localTimeSchema, moneyMinorSchema, timestampSchema } from "./common.ts";
 import { placeCandidateSchema } from "./geo.ts";
 import { destinationCategorySchema } from "./trip.ts";
-import { LIMITS } from "../constants.ts";
+import { AI_PROVIDERS, LIMITS } from "../constants.ts";
 
 // ---------------------------------------------------------------------------
 // What the model may return. Deliberately has NO coordinate fields: locations are
@@ -123,8 +123,28 @@ export const proposalSchema = z.object({
 });
 export type Proposal = z.infer<typeof proposalSchema>;
 
-export const aiDraftRequestSchema = z.object({ prompt: z.string().trim().min(5).max(2000) });
-export const aiEditRequestSchema = z.object({ instruction: z.string().trim().min(3).max(1000) });
+// ---------------------------------------------------------------------------
+// Bring your own key: the user's AI connection lives in their browser and is sent with each AI
+// request. The server uses it for that request only; it is never stored or logged.
+// ---------------------------------------------------------------------------
+
+export const aiProviderSchema = z.enum(AI_PROVIDERS);
+
+export const aiConnectionSchema = z.object({
+  provider: aiProviderSchema,
+  model: z.string().trim().min(1).max(200),
+  apiKey: z.string().trim().min(10).max(500),
+});
+export type AiConnection = z.infer<typeof aiConnectionSchema>;
+
+export const aiDraftRequestSchema = z.object({
+  prompt: z.string().trim().min(5).max(2000),
+  ai: aiConnectionSchema,
+});
+export const aiEditRequestSchema = z.object({
+  instruction: z.string().trim().min(3).max(1000),
+  ai: aiConnectionSchema,
+});
 export const applyProposalRequestSchema = z.object({
   /** Draft stop keys or edit operation indexes (as strings) the user unticked. */
   exclude: z.array(z.string()).max(500).default([]),

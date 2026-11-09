@@ -1,13 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
-import {
-  OrbiError,
-  aiDraftRequestSchema,
-  aiEditRequestSchema,
-  applyProposalRequestSchema,
-  idSchema,
-} from "@orbi/core";
-import { generateDraft, proposeEdit, type AiModel, type Geocode } from "@orbi/ai";
+import { aiDraftRequestSchema, aiEditRequestSchema, applyProposalRequestSchema, idSchema } from "@orbi/core";
+import { generateDraft, proposeEdit, type AiConfig, type AiModel, type Geocode } from "@orbi/ai";
 import {
   applyProposal,
   createProposal,
@@ -22,7 +16,8 @@ import { searchPlaces } from "../services/places.ts";
 
 export interface AiRouteDeps {
   db: Db;
-  ai: AiModel | null;
+  /** Injected for tests; defaults to the real provider SDKs. */
+  createModel: (config: AiConfig) => AiModel;
   geocoder: Geocoder;
   cacheTtlMs: number;
   log?: (message: string) => void;
@@ -31,39 +26,30 @@ export interface AiRouteDeps {
 const tripParam = validate("param", z.object({ tripId: idSchema }));
 const idParam = validate("param", z.object({ id: idSchema }));
 
+/**
+ * AI requests carry the caller's own provider, model and API key (bring your own key). The key is
+ * used to build a model for this one request and is neither stored nor logged.
+ */
 export function aiRoutes(deps: AiRouteDeps) {
   const geocode: Geocode = (q, near) =>
     searchPlaces({ db: deps.db, geocoder: deps.geocoder, cacheTtlMs: deps.cacheTtlMs, log: deps.log }, q, {
       near,
       limit: 5,
     });
-  const pipeline = () => {
-    if (!deps.ai) {
-      throw new OrbiError(
-        "provider_unavailable",
-        "AI is not configured on this server (set AI_PROVIDER and AI_MODEL)",
-      );
-    }
-    return { model: deps.ai.model, geocode };
-  };
 
   return new Hono()
     .post("/trips/:tripId/ai/drafts", tripParam, validate("json", aiDraftRequestSchema), async (c) => {
       const { tripId } = c.req.valid("param");
-      const payload = await generateDraft(
-        pipeline(),
-        await getTripAggregate(deps.db, tripId),
-        c.req.valid("json").prompt,
-      );
+      const { prompt, ai } = c.req.valid("json");
+      const trip = await getTripAggregate(deps.db, tripId);
+      const payload = await generateDraft({ model: deps.createModel(ai).model, geocode }, trip, prompt);
       return c.json(await createProposal(deps.db, tripId, payload), 201);
     })
     .post("/trips/:tripId/ai/edits", tripParam, validate("json", aiEditRequestSchema), async (c) => {
       const { tripId } = c.req.valid("param");
-      const payload = await proposeEdit(
-        pipeline(),
-        await getTripAggregate(deps.db, tripId),
-        c.req.valid("json").instruction,
-      );
+      const { instruction, ai } = c.req.valid("json");
+      const trip = await getTripAggregate(deps.db, tripId);
+      const payload = await proposeEdit({ model: deps.createModel(ai).model, geocode }, trip, instruction);
       return c.json(await createProposal(deps.db, tripId, payload), 201);
     })
     .get("/proposals/:id", idParam, async (c) => c.json(await getProposal(deps.db, c.req.valid("param").id)))

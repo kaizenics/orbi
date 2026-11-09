@@ -76,7 +76,5 @@ export const clientConfigSchema = z.object({
   travelModes: z.array(travelModeSchema),
   routingProvider: z.string(),
   geocoder: z.object({ provider: z.string(), typeahead: z.boolean() }),
-  /** AI is optional: when unavailable the apps hide AI features and everything else works. */
-  ai: z.object({ available: z.boolean(), provider: z.string().nullable(), model: z.string().nullable() }),
 });
 export type ClientConfig = z.infer<typeof clientConfigSchema>;

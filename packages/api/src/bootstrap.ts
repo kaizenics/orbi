@@ -1,4 +1,3 @@
-import { createAiModel } from "@orbi/ai";
 import { openDb, purgeExpiredCache } from "@orbi/db";
 import { createGeoProviders } from "@orbi/geo";
 import { createApp } from "./app.ts";
@@ -36,28 +35,15 @@ export async function createAppFromEnv(
     minIntervalMs: env.GEO_MIN_INTERVAL_MS,
   });
 
-  const ai =
-    env.AI_PROVIDER && env.AI_MODEL
-      ? createAiModel({
-          provider: env.AI_PROVIDER,
-          model: env.AI_MODEL,
-          apiKey: env.OPENROUTER_API_KEY,
-          baseUrl: env.OLLAMA_BASE_URL,
-        })
-      : null;
-  log(ai ? `AI: ${ai.provider} / ${ai.modelId}` : "AI: off (set AI_PROVIDER and AI_MODEL to enable)");
-
   const app = createApp({
     version: options.version,
     db,
     geo,
-    ai,
     clientConfig: {
       map: { styleUrl: env.MAP_STYLE_URL, attribution: env.MAP_ATTRIBUTION },
       travelModes: [...geo.router.modes],
       routingProvider: geo.router.name,
       geocoder: { provider: geo.geocoder.name, typeahead: geo.typeahead !== null },
-      ai: { available: ai !== null, provider: ai?.provider ?? null, model: ai?.modelId ?? null },
     },
     cacheTtlMs: env.CACHE_TTL_DAYS * 24 * 60 * 60 * 1000,
     apiToken: env.ORBI_API_TOKEN,

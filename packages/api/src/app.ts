@@ -4,7 +4,7 @@ import { cors } from "hono/cors";
 import { requestId } from "hono/request-id";
 import { APP_NAME, type ClientConfig, type HealthResponse } from "@orbi/core";
 import type { Db } from "@orbi/db";
-import type { AiModel } from "@orbi/ai";
+import { createAiModel, type AiConfig, type AiModel } from "@orbi/ai";
 import type { GeoProviders } from "@orbi/geo";
 import { bearerAuth } from "./http/auth.ts";
 import { problem, problemFromError } from "./http/problem.ts";
@@ -18,8 +18,8 @@ export interface AppDeps {
   db: Db;
   geo: GeoProviders;
   clientConfig: ClientConfig;
-  /** Optional: without it, AI routes answer 503 and everything else works. */
-  ai?: AiModel | null;
+  /** Injected for tests; defaults to the real provider SDKs. */
+  createModel?: (config: AiConfig) => AiModel;
   /** How long geocoding and routing results stay cached (default 30 days). */
   cacheTtlMs?: number;
   /** When set, every route except GET /health requires `Authorization: Bearer <token>`. */
@@ -45,12 +45,12 @@ export function createApp(deps: AppDeps) {
   app.use(requestId());
   if (deps.corsOrigins?.length) app.use(cors({ origin: deps.corsOrigins }));
   if (deps.apiToken) app.use(bearerAuth(deps.apiToken));
-  app.use(
-    bodyLimit({
-      maxSize: 2 * 1024 * 1024,
-      onError: (c) => problem(c, 413, "bad_request", { detail: "Request body is larger than 2 MB" }),
-    }),
-  );
+  const limitBody = bodyLimit({
+    maxSize: 2 * 1024 * 1024,
+    onError: (c) => problem(c, 413, "bad_request", { detail: "Request body is larger than 2 MB" }),
+  });
+  // Only methods with a body: the limiter re-wraps bodiless requests, which fails on Next.js requests.
+  app.use((c, next) => (["POST", "PUT", "PATCH"].includes(c.req.method) ? limitBody(c, next) : next()));
   app.onError((error, c) => problemFromError(c, error));
   app.notFound((c) => problem(c, 404, "not_found", { detail: `No route for ${c.req.method} ${c.req.path}` }));
 
@@ -69,7 +69,7 @@ export function createApp(deps: AppDeps) {
       "/",
       aiRoutes({
         db: deps.db,
-        ai: deps.ai ?? null,
+        createModel: deps.createModel ?? createAiModel,
         geocoder: deps.geo.geocoder,
         cacheTtlMs: geoDeps.cacheTtlMs,
         log: deps.log,

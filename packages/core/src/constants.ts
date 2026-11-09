@@ -45,3 +45,7 @@ export const DEFAULTS = {
   dayEndTime: "20:00",
   visitDurationMin: 60,
 } as const;
+
+/** AI providers a user can connect with their own API key. */
+export const AI_PROVIDERS = ["openrouter", "openai", "anthropic", "google"] as const;
+export type AiProvider = (typeof AI_PROVIDERS)[number];

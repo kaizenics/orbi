@@ -8,7 +8,6 @@ export const clientConfig: ClientConfig = {
   travelModes: ["driving", "walking"],
   routingProvider: "osrm",
   geocoder: { provider: "nominatim", typeahead: false },
-  ai: { available: false, provider: null, model: null },
 };
 
 /** Counting fakes: a geocoder with one fixed result and a router that bends each leg (not a straight line). */
