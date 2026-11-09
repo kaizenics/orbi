@@ -1,19 +1,44 @@
 /**
- * Single-user web session: a signed expiry timestamp in an HTTP-only cookie.
- * The signing key derives from ORBI_WEB_PASSWORD, so changing the password logs everyone out.
- * Uses Web Crypto so it works in proxy.ts and route handlers alike.
+ * Web session after Google sign-in: "<expiry>.<base64url email>.<hmac>" in an HTTP-only cookie,
+ * signed with ORBI_SESSION_SECRET (rotate it to log everyone out). Web Crypto only, so it works
+ * in proxy.ts and route handlers alike.
  */
 export const SESSION_COOKIE = "orbi_session";
+/** Short-lived OAuth state + PKCE verifier during Google sign-in. */
+export const OAUTH_COOKIE = "orbi_oauth";
 export const SESSION_MAX_AGE_S = 30 * 24 * 60 * 60;
 
 const encoder = new TextEncoder();
 const hex = (buf: ArrayBuffer) =>
   [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+const b64url = (s: string) =>
+  btoa(String.fromCharCode(...encoder.encode(s)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+const fromB64url = (s: string) =>
+  new TextDecoder().decode(
+    Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0)),
+  );
 
-async function sign(payload: string, password: string): Promise<string> {
+/** Google sign-in is on when these are set; without them the web app is open (local development). */
+export const authConfig = () => {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const secret = process.env.ORBI_SESSION_SECRET;
+  const allowed = (process.env.ORBI_ALLOWED_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  return clientId && clientSecret && secret && allowed.length
+    ? { clientId, clientSecret, secret, allowed }
+    : null;
+};
+
+async function sign(payload: string, secret: string): Promise<string> {
   const key = await crypto.subtle.importKey(
     "raw",
-    encoder.encode(`orbi-session-v1:${password}`),
+    encoder.encode(`orbi-session-v2:${secret}`),
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"],
@@ -29,20 +54,37 @@ function safeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
-export async function createSession(password: string): Promise<string> {
-  const expires = String(Date.now() + SESSION_MAX_AGE_S * 1000);
-  return `${expires}.${await sign(expires, password)}`;
+export async function createSession(email: string, secret: string): Promise<string> {
+  const payload = `${Date.now() + SESSION_MAX_AGE_S * 1000}.${b64url(email)}`;
+  return `${payload}.${await sign(payload, secret)}`;
 }
 
-export async function isValidSession(cookie: string | undefined, password: string): Promise<boolean> {
-  const [expires, mac] = cookie?.split(".") ?? [];
-  if (!expires || !mac || !(Number(expires) > Date.now())) return false;
-  return safeEqual(mac, await sign(expires, password));
+/** The signed-in email, or null. Re-checks the allow-list so removing an email revokes access. */
+export async function sessionEmail(
+  cookie: string | undefined,
+  secret: string,
+  allowed: string[],
+): Promise<string | null> {
+  const [expires, email, mac] = cookie?.split(".") ?? [];
+  if (!expires || !email || !mac || !(Number(expires) > Date.now())) return null;
+  if (!safeEqual(mac, await sign(`${expires}.${email}`, secret))) return null;
+  try {
+    const decoded = fromB64url(email);
+    return allowed.includes(decoded) ? decoded : null;
+  } catch {
+    return null;
+  }
 }
 
-export async function passwordMatches(input: string, password: string): Promise<boolean> {
-  const digest = async (s: string) => hex(await crypto.subtle.digest("SHA-256", encoder.encode(s)));
-  return safeEqual(await digest(input), await digest(password));
+export const randomToken = () => hex(crypto.getRandomValues(new Uint8Array(32)).buffer);
+
+/** PKCE S256 challenge for a verifier. */
+export async function pkceChallenge(verifier: string): Promise<string> {
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", encoder.encode(verifier)));
+  return btoa(String.fromCharCode(...digest))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
 }
 
 /**
@@ -51,12 +93,13 @@ export async function passwordMatches(input: string, password: string): Promise<
  */
 export function safeNextPath(next: unknown): string {
   // eslint-disable-next-line no-control-regex -- rejecting control characters is the point
-  if (typeof next !== "string" || /[\u0000-\u001f\u007f\\]/.test(next) || !next.startsWith("/")) return "/";
+  if (typeof next !== "string" || /[\u0000-\u001f\u007f\\]/.test(next) || !next.startsWith("/"))
+    return "/trips";
   const base = "http://orbi.invalid";
   try {
     const url = new URL(next, base);
-    return url.origin === base ? url.pathname + url.search + url.hash : "/";
+    return url.origin === base ? url.pathname + url.search + url.hash : "/trips";
   } catch {
-    return "/";
+    return "/trips";
   }
 }
