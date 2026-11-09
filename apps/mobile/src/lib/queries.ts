@@ -1,4 +1,4 @@
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { TripAggregate } from "@orbi/core";
 import { api, unwrap } from "./api";
 
@@ -37,4 +37,26 @@ export function useDayRoutes(data: TripAggregate | undefined) {
     })),
   });
   return days.map((day, i) => ({ dayId: day.id, query: results[i]! }));
+}
+
+/** Itinerary edits used on the trip screen; each refetches the trip (routes follow automatically). */
+export function useTripEdits(tripId: string) {
+  const queryClient = useQueryClient();
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ["trips", tripId] });
+  return {
+    reorder: useMutation({
+      mutationFn: async ({ dayId, itemIds }: { dayId: string; itemIds: string[] }) =>
+        unwrap(await api.days[":id"].order.$put({ param: { id: dayId }, json: { itemIds } })),
+      onSettled: refresh,
+    }),
+    move: useMutation({
+      mutationFn: async ({ id, toDayId }: { id: string; toDayId: string }) =>
+        unwrap(await api.items[":id"].move.$post({ param: { id }, json: { toDayId, toPosition: 999 } })),
+      onSettled: refresh,
+    }),
+    remove: useMutation({
+      mutationFn: async (id: string) => unwrap(await api.items[":id"].$delete({ param: { id } })),
+      onSettled: refresh,
+    }),
+  };
 }
