@@ -4,7 +4,8 @@
   "license": "AGPL-3.0-or-later",
   "scripts": {
     "build": "turbo run build",
-    "dev": "turbo run dev --filter=web --filter=@orbi/server",
+    "dev": "turbo run dev --filter=web",
+    "dev:server": "turbo run dev --filter=@orbi/server",
     "dev:mobile": "turbo run dev --filter=mobile",
     "lint": "turbo run lint",
     "check-types": "turbo run check-types",

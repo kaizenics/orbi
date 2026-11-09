@@ -1,117 +1,107 @@
-# Deploying ORBI (free tier)
+# Deploying ORBI
 
-This guide puts the **ORBI server** on a free cloud VM and the **web app** on Vercel, with AI through OpenRouter (or Ollama on the VM). Everything here works without paying, but free tiers have limits and can change — see [technical decisions §3](./technical-decisions.md#3-cost-classification-0-requirement).
+The recommended setup runs **everything on Vercel**: the web app and the API (served by Next.js at `/api`), with data in **Turso** and sign-in through **Google**. AI uses OpenRouter. No server to maintain.
 
 ```mermaid
 flowchart LR
-  Browser[Browser / iPhone PWA] -->|HTTPS + login| Vercel[Web app on Vercel]
-  Vercel -->|HTTPS + API token| Caddy
-  Phone[Android app] -->|HTTPS + API token| Caddy
-  subgraph VM [Oracle Cloud VM — Docker]
-    Caddy[Caddy: automatic HTTPS] --> Server[ORBI server + SQLite]
+  Browser[Browser / iPhone PWA] -->|Google sign-in| Vercel
+  Phone[Android app] -->|API token| Vercel
+  subgraph Vercel [Vercel — Next.js]
+    Web[Web app] --- API[ORBI API /api]
   end
-  Server --> OpenRouter[(OpenRouter AI)]
-  Server --> OSM[(Nominatim / OSRM)]
+  API --> Turso[(Turso database)]
+  API --> OpenRouter[(OpenRouter AI)]
+  API --> OSM[(Nominatim / OSRM)]
 ```
 
-Why this split: Vercel and Netlify only run short-lived functions and delete files between requests, so the server (which keeps a SQLite file) and Ollama cannot run there. Only the web app can.
+All of these have free plans with limits that can change: [Vercel Hobby](https://vercel.com/docs/plans/hobby) is for personal, non-commercial use; check [Turso pricing](https://turso.tech/pricing) and OpenRouter's free-model limits (about 50 requests/day) before relying on them.
 
-## 1. Create the VM
+## 1. Create the Turso database
 
-Follow the Oracle Cloud steps (Ubuntu 24.04 aarch64, shape VM.Standard.A1.Flex, ingress rules for TCP 80 and 443) from [Oracle's guide](https://docs.oracle.com/iaas/Content/Compute/Tasks/launchinginstance.htm). Then connect:
+With the [Turso CLI](https://docs.turso.tech/cli/installation) (or the dashboard):
 
 ```bash
-ssh -i path/to/key.key ubuntu@<public-ip>
+turso db create orbi
+turso db show orbi --url           # libsql://orbi-<you>.turso.io
+turso db tokens create orbi        # auth token
 ```
 
-## 2. Prepare the VM
+Create the tables from your computer (run again after each update that adds migrations):
 
 ```bash
-# Docker (official convenience script), then allow your user to run it
-curl -fsSL https://get.docker.com | sudo sh
-sudo usermod -aG docker ubuntu && newgrp docker
-
-# Oracle's Ubuntu image blocks ports with its own firewall: open 80 and 443
-sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT
-sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT
-sudo netfilter-persistent save
+ORBI_DATABASE_URL=libsql://orbi-<you>.turso.io ORBI_DATABASE_AUTH_TOKEN=<token> pnpm --filter @orbi/db db:migrate
 ```
 
-## 3. Get a domain name (free)
+On Windows PowerShell, set the variables first: `$env:ORBI_DATABASE_URL="..."; $env:ORBI_DATABASE_AUTH_TOKEN="..."`.
 
-HTTPS certificates need a hostname. At [duckdns.org](https://www.duckdns.org/) sign in, create a subdomain (e.g. `orbi-yourname`) and set its IP to the VM's public IP. Your API will live at `https://orbi-yourname.duckdns.org`.
+Optional demo trip: run `pnpm --filter @orbi/server db:seed` with the same two variables.
 
-## 4. Start the server
+## 2. Create the Google sign-in client
 
-```bash
-git clone https://github.com/<you>/orbi.git && cd orbi
-cp infra/.env.example infra/.env
-nano infra/.env
-```
+1. [Google Cloud Console](https://console.cloud.google.com/) → create a project → **APIs & Services → OAuth consent screen**: user type _External_, app name _ORBI_, add your email as a **test user** (testing mode is enough for personal use).
+2. **Credentials → Create credentials → OAuth client ID** → _Web application_.
+3. **Authorized redirect URIs:**
+   - `https://<your-vercel-domain>/auth/google/callback`
+   - `http://localhost:3000/auth/google/callback` (local development)
+4. Copy the client ID and client secret.
 
-Fill in:
+ORBI only asks Google for your email address and only lets in the emails listed in `ORBI_ALLOWED_EMAILS`.
 
-| Variable                                          | Value                                                           |
-| ------------------------------------------------- | --------------------------------------------------------------- |
-| `ORBI_DOMAIN`                                     | `orbi-yourname.duckdns.org`                                     |
-| `ORBI_API_TOKEN`                                  | output of `openssl rand -hex 24` (keep it; Vercel needs it too) |
-| `AI_PROVIDER` / `AI_MODEL` / `OPENROUTER_API_KEY` | e.g. `openrouter`, a model ID ending in `:free`, your key       |
-| `GEO_CONTACT_EMAIL`                               | your email (requested by the Nominatim usage policy)            |
+## 3. Deploy to Vercel
 
-Then:
-
-```bash
-docker compose -f infra/docker-compose.yml up -d --build
-curl https://orbi-yourname.duckdns.org/health     # {"status":"ok",...}
-```
-
-Caddy fetches the certificate on first start (takes up to a minute). Logs: `docker compose -f infra/docker-compose.yml logs -f`.
-
-**OpenRouter safety:** in the OpenRouter dashboard, set a credit limit on the key and only use `:free` models if you want to stay at $0. Free models allow about 50 requests/day.
-
-**Ollama instead of OpenRouter:** start with `--profile ollama`, set `AI_PROVIDER=ollama`, `OLLAMA_BASE_URL=http://ollama:11434`, `AI_MODEL=<model>`, then `docker compose -f infra/docker-compose.yml exec ollama ollama pull <model>`. On the free ARM VM (2 cores, no GPU) expect drafts to take minutes.
-
-## 5. Deploy the web app to Vercel
-
-1. In Vercel, **Add New → Project** and import the repository.
-2. **Root Directory:** `apps/web` (framework: Next.js; Vercel installs the pnpm workspace from the repository root).
+1. **Add New → Project**, import the repository.
+2. **Root Directory:** `apps/web` (framework Next.js; Vercel installs the pnpm workspace from the repository root).
 3. **Environment variables:**
 
-   | Variable            | Value                                                                                 |
-   | ------------------- | ------------------------------------------------------------------------------------- |
-   | `ORBI_API_URL`      | `https://orbi-yourname.duckdns.org`                                                   |
-   | `ORBI_API_TOKEN`    | the same token as on the server                                                       |
-   | `ORBI_WEB_PASSWORD` | a strong password — **required**: without it the web app refuses to forward the token |
+   | Variable                                          | Value                                                             |
+   | ------------------------------------------------- | ----------------------------------------------------------------- |
+   | `ORBI_DATABASE_URL`                               | `libsql://orbi-<you>.turso.io`                                    |
+   | `ORBI_DATABASE_AUTH_TOKEN`                        | the Turso token                                                   |
+   | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`       | from step 2                                                       |
+   | `ORBI_ALLOWED_EMAILS`                             | your Google email(s), comma separated                             |
+   | `ORBI_SESSION_SECRET`                             | output of `openssl rand -hex 32` (changing it signs everyone out) |
+   | `ORBI_API_TOKEN`                                  | output of `openssl rand -hex 24` — used by the Android app        |
+   | `AI_PROVIDER` / `AI_MODEL` / `OPENROUTER_API_KEY` | optional, e.g. `openrouter`, a `:free` model ID, your key         |
+   | `GEO_CONTACT_EMAIL`                               | your email (requested by the Nominatim usage policy)              |
 
-4. Deploy, open the URL, log in. On iPhone: Safari → Share → **Add to Home Screen**.
+4. Deploy, open the site, **Log in → Continue with Google**. On iPhone: Safari → Share → **Add to Home Screen**.
 
-Vercel's Hobby plan is free for personal, non-commercial use.
+Safety rails: on Vercel the API refuses to start with a local database file (Vercel's disk is temporary), and the app refuses to serve trips if Google sign-in is not configured.
 
-## 6. Android app
+In the OpenRouter dashboard, set a credit limit on the key and use `:free` models to stay at $0.
+
+## 4. Android app
 
 In `apps/mobile/.env`:
 
 ```bash
-EXPO_PUBLIC_API_URL=https://orbi-yourname.duckdns.org
-EXPO_PUBLIC_API_TOKEN=<the API token>
+EXPO_PUBLIC_API_URL=https://<your-vercel-domain>/api
+EXPO_PUBLIC_API_TOKEN=<ORBI_API_TOKEN>
 ```
 
-The token is built into the APK — keep the APK on your own devices, and rotate `ORBI_API_TOKEN` if it is ever shared.
+The token is built into the APK — keep the APK on your own devices and rotate `ORBI_API_TOKEN` if it is ever shared.
 
-## Backups and updates
+## Local development
+
+`pnpm dev` runs the web app with the API inside it and a local database file at `apps/web/data/orbi.db`. Without the Google variables, sign-in is off on your computer. To use Turso or Google sign-in locally, put the same variables in `apps/web/.env.local`.
+
+For the Android app on your LAN, run the standalone server too: `pnpm --filter @orbi/server dev` (set `ORBI_HOST=0.0.0.0` and `ORBI_API_TOKEN` in `apps/server/.env`, and `ORBI_DATABASE_URL=file:../web/data/orbi.db` to share the web app's data).
+
+## Notes and limits
+
+- **Rate limits are per server instance.** Public Nominatim and OSRM allow about 1 request/second for your whole install. On Vercel several instances can run at once, so a burst from several devices could exceed that; results are cached in the database, which keeps repeat requests off those services.
+- **Reordering long days is slower on Turso** than on a local file, because each position update is a network round trip (a day with 20 stops takes noticeably longer to save).
+- **Backups:** Turso keeps point-in-time backups; individual trips can also be exported with `GET /api/trips/:id/export`.
+
+## Alternative: your own server (VM + Docker)
+
+To run the API on a VM instead (e.g. Oracle Cloud Always Free, or to use Ollama), use `apps/server` with `infra/docker-compose.yml` (Caddy provides HTTPS) and set `ORBI_API_URL=https://<vm-domain>` plus `ORBI_API_TOKEN` in the Vercel project: the web app then forwards `/api` to the VM. The server keeps its data in a local file (`ORBI_DATABASE_URL=file:/data/orbi.db`) or in Turso.
 
 ```bash
-# Backup: stop the server briefly so the SQLite files are consistent, copy them out, restart
-docker compose -f infra/docker-compose.yml stop server
-docker compose -f infra/docker-compose.yml cp server:/data ./orbi-backup-$(date +%F)
-docker compose -f infra/docker-compose.yml start server
-
-# Update to the latest code (the server migrates the database and backs it up first)
-git pull && docker compose -f infra/docker-compose.yml up -d --build
+cp infra/.env.example infra/.env   # set ORBI_DOMAIN, ORBI_API_TOKEN, AI settings
+docker compose -f infra/docker-compose.yml up -d --build
 ```
 
-Individual trips can also be exported from the API (`GET /trips/:id/export`) and re-imported (`POST /trips/import`).
+Oracle's Ubuntu image blocks ports 80/443 with its own firewall: open them with `sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT` (and `443`), then `sudo netfilter-persistent save`. A free hostname for HTTPS: [DuckDNS](https://www.duckdns.org/).
 
-## Self-hosting maps, search and routing (optional)
-
-The defaults use free public services with fair-use limits (OpenFreeMap tiles, public Nominatim, the FOSSGIS OSRM demo). To remove that dependency, point the server at your own instances via `MAP_STYLE_URL`, `GEOCODER_BASE_URL` / `PHOTON_BASE_URL` and `ROUTER_DRIVING_URL` / `ROUTER_WALKING_URL` (set `GEO_MIN_INTERVAL_MS=0` for your own instances). Official images: [osrm-backend](https://github.com/Project-OSRM/osrm-backend), [Nominatim (mediagis)](https://github.com/mediagis/nominatim-docker), [Photon](https://github.com/komoot/photon), [OpenFreeMap](https://github.com/hyperknot/openfreemap). A Philippines extract from [Geofabrik](https://download.geofabrik.de/asia/philippines.html) is small enough for the free VM's disk, but OSRM and Nominatim preprocessing need several GB of RAM — check each project's requirements first.
+Self-hosting maps, search and routing is optional: point `MAP_STYLE_URL`, `GEOCODER_BASE_URL`/`PHOTON_BASE_URL` and `ROUTER_DRIVING_URL`/`ROUTER_WALKING_URL` at your own [OpenFreeMap](https://github.com/hyperknot/openfreemap), [Nominatim](https://github.com/mediagis/nominatim-docker)/[Photon](https://github.com/komoot/photon) and [OSRM](https://github.com/Project-OSRM/osrm-backend) instances (`GEO_MIN_INTERVAL_MS=0` for your own).

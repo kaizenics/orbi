@@ -44,17 +44,17 @@ pnpm install
 pnpm dev
 ```
 
-- Web app: <http://localhost:3000>
-- API: <http://127.0.0.1:3100/health>
+- Landing page: <http://localhost:3000>, planner: <http://localhost:3000/trips>
+- API: <http://localhost:3000/api/health> (served by the web app)
 
 Load a demo trip ("3 days in Cebu", with coordinates from OpenStreetMap) and open it in the web app:
 
 ```bash
-pnpm --filter @orbi/server db:seed
+ORBI_DATABASE_URL=file:../web/data/orbi.db pnpm --filter @orbi/server db:seed
 ```
 
-The web app forwards `/api/*` to the server, so the browser only talks to one address. The server
-stores its database in `apps/server/data/orbi.db` (git-ignored) and migrates it automatically on start.
+The API runs inside the web app and stores data in `apps/web/data/orbi.db` (git-ignored), migrated
+automatically on start. Sign-in is off locally until you set the Google variables (see `.env.example`).
 Defaults work out of the box. To change them, copy [`.env.example`](./.env.example) values into
 `apps/server/.env` or `apps/web/.env`.
 
@@ -104,8 +104,8 @@ Phase 3) contains native code.
 
 ## Deploying
 
-Run the server on a free cloud VM with Docker and HTTPS, and the web app on Vercel: see
-[docs/deployment.md](./docs/deployment.md). Vercel and Netlify cannot host the server or Ollama.
+Deploy the web app and API together on Vercel, with Turso as the database and Google sign-in: see
+[docs/deployment.md](./docs/deployment.md). A Docker setup for your own server is included too.
 
 ## Cost
 

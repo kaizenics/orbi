@@ -6,7 +6,7 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "env": ["ORBI_API_URL"],
+      "env": ["ORBI_*", "GOOGLE_*", "AI_*", "OPENROUTER_API_KEY", "GEO_*", "VERCEL"],
       "outputs": [".next/**", "!.next/cache/**", "!.next/dev/**"]
     },
     "lint": {
