@@ -17,6 +17,8 @@ export const nextJsConfig = [
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Third-party file copied from node_modules (see apps/web/scripts/copy-maplibre-worker.mjs).
+    "public/vendor/**",
   ]),
   {
     languageOptions: {
