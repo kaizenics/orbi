@@ -136,7 +136,14 @@ export async function applyProposal(db: Db, id: string, exclude: readonly string
         for (const stop of day.stops) {
           total++;
           if (skip.has(stop.key)) continue;
-          await insertItem(tx, day.dayId, await destinationFor(tx, proposal.tripId, stop), {});
+          await insertItem(
+            tx,
+            day.dayId,
+            stop.activityType
+              ? { type: stop.activityType, title: stop.name }
+              : await destinationFor(tx, proposal.tripId, stop),
+            stop.activityType ? { durationOverrideMin: stop.visitDurationMin } : {},
+          );
           applied++;
         }
       }
@@ -153,8 +160,11 @@ export async function applyProposal(db: Db, id: string, exclude: readonly string
           });
         } else {
           await updateItem(tx, op.itemId, { fixedStartTime: op.fixedStartTime, notes: op.notes });
-          if (op.visitDurationMin !== null)
-            await updateDestination(tx, op.destinationId, { visitDurationMin: op.visitDurationMin });
+          if (op.visitDurationMin !== null) {
+            if (op.destinationId)
+              await updateDestination(tx, op.destinationId, { visitDurationMin: op.visitDurationMin });
+            else await updateItem(tx, op.itemId, { durationOverrideMin: op.visitDurationMin });
+          }
         }
         applied++;
       }

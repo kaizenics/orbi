@@ -98,6 +98,35 @@ export function computeDaySchedule(input: ScheduleInput): DaySchedule {
   };
 }
 
+/** Default length of an activity without its own duration (wake up, breakfast…). */
+export const DEFAULT_ACTIVITY_MIN = 30;
+
+/** Minutes an item takes: its override, else the place's visit time, else the activity default. */
+export function itemDurationMin(
+  item: { durationOverrideMin: number | null; activityType: string | null },
+  visitDurationMin: number | undefined,
+): number {
+  return item.durationOverrideMin ?? (item.activityType ? DEFAULT_ACTIVITY_MIN : (visitDurationMin ?? 0));
+}
+
+/**
+ * Travel seconds into each item after the first, for computeDaySchedule. Routes only connect places,
+ * so moving into an activity takes 0 and moving into a place uses the leg from the previous place
+ * (null while that leg is unknown). An activity happens where the traveller already is.
+ */
+export function itemLegSeconds(
+  items: readonly { id: string; activityType: string | null }[],
+  legs: readonly { toItemId: string; status: string; durationS?: number }[] | undefined,
+): (number | null)[] {
+  let placesSoFar = items[0] && !items[0].activityType ? 1 : 0;
+  return items.slice(1).map((item) => {
+    if (item.activityType) return 0;
+    if (placesSoFar++ === 0) return 0; // first place of the day: nothing to travel from
+    const leg = legs?.find((l) => l.toItemId === item.id);
+    return leg?.status === "routed" && leg.durationS !== undefined ? leg.durationS : null;
+  });
+}
+
 export interface CostSummary {
   /** Estimated cost per day (minor units); occurrences without a cost estimate count as 0. */
   perDayMinor: number[];
@@ -109,7 +138,7 @@ export interface CostSummary {
 export function summarizeCosts(data: TripAggregate): CostSummary {
   const cost = new Map(data.destinations.map((d) => [d.id, d.estCostMinor ?? 0]));
   const perDayMinor = data.days.map((day) =>
-    day.items.reduce((sum, i) => sum + (cost.get(i.destinationId) ?? 0), 0),
+    day.items.reduce((sum, i) => sum + (i.destinationId ? (cost.get(i.destinationId) ?? 0) : 0), 0),
   );
   const totalMinor = perDayMinor.reduce((a, b) => a + b, 0);
   return {

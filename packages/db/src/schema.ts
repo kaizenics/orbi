@@ -10,6 +10,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 import {
+  ACTIVITY_TYPES,
   COST_SOURCES,
   DESTINATION_CATEGORIES,
   LOCATION_SOURCES,
@@ -152,9 +153,10 @@ export const itineraryItems = sqliteTable(
     tripDayId: text("trip_day_id")
       .notNull()
       .references(() => tripDays.id, { onDelete: "cascade" }),
-    destinationId: text("destination_id")
-      .notNull()
-      .references(() => destinations.id, { onDelete: "cascade" }),
+    /** Null for activities (wake up, meals at the hotel, rest…), which have no location. */
+    destinationId: text("destination_id").references(() => destinations.id, { onDelete: "cascade" }),
+    activityType: text("activity_type", { enum: ACTIVITY_TYPES }),
+    title: text("title"),
     position: integer("position").notNull(),
     fixedStartTime: text("fixed_start_time"),
     durationOverrideMin: integer("duration_override_min"),
@@ -165,6 +167,11 @@ export const itineraryItems = sqliteTable(
   (t) => [
     uniqueIndex("itinerary_items_day_position_uq").on(t.tripDayId, t.position),
     index("itinerary_items_destination_idx").on(t.destinationId),
+    // A row is either a place or a titled activity, never both or neither.
+    check(
+      "itinerary_items_kind_check",
+      sql`(${t.destinationId} IS NOT NULL AND ${t.activityType} IS NULL) OR (${t.destinationId} IS NULL AND ${t.activityType} IN (${inList(ACTIVITY_TYPES)}) AND ${t.title} IS NOT NULL)`,
+    ),
   ],
 );
 

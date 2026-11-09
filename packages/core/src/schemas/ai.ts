@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { idSchema, localTimeSchema, moneyMinorSchema, timestampSchema } from "./common.ts";
 import { placeCandidateSchema } from "./geo.ts";
-import { destinationCategorySchema } from "./trip.ts";
+import { activityTypeSchema, destinationCategorySchema } from "./trip.ts";
 import { AI_PROVIDERS, LIMITS } from "../constants.ts";
 
 // ---------------------------------------------------------------------------
@@ -13,19 +13,30 @@ const aiStopSchema = z.object({
   name: z.string().min(1).max(120).describe("Official name of a real, visitable place"),
   localityHint: z.string().max(120).describe("City/area to disambiguate the place, e.g. 'Cebu City'"),
   category: destinationCategorySchema,
-  visitDurationMin: z.int().min(10).max(600).describe("Typical visit length in minutes"),
+  visitDurationMin: z.int().min(5).max(600).describe("Typical visit length in minutes"),
   estCost: z
     .number()
     .min(0)
     .nullable()
     .describe("Estimated cost per person in the trip currency (major units), or null"),
   why: z.string().max(240).describe("One sentence on why it fits the request"),
+  // Optional so a model that leaves it out still produces a valid answer: missing means a place.
+  activity: activityTypeSchema
+    .nullish()
+    .describe(
+      "null for a real place. Set it for a moment that is not a specific place (wake up, breakfast at the hotel, rest, free time, transfer); then name is a short label and localityHint may be empty",
+    ),
 });
 
 export const aiDraftOutputSchema = z.object({
   summary: z.string().max(400),
   days: z
-    .array(z.object({ title: z.string().max(120), stops: z.array(aiStopSchema).min(1).max(8) }))
+    .array(
+      z.object({
+        title: z.string().max(120),
+        stops: z.array(aiStopSchema).min(1).max(LIMITS.maxItemsPerDay),
+      }),
+    )
     .min(1)
     .max(LIMITS.maxTripDays),
 });
@@ -72,8 +83,10 @@ export const proposedStopSchema = z.object({
   why: z.string(),
   /** What was sent to the geocoder. */
   query: z.string(),
-  /** Provider result, or null = "needs location" (cannot be applied). */
+  /** Provider result, or null = "needs location" (cannot be applied). Always null for activities. */
   location: placeCandidateSchema.nullable(),
+  /** Set when this is an activity rather than a place (older proposals have no field). */
+  activityType: activityTypeSchema.nullable().default(null),
 });
 export type ProposedStop = z.infer<typeof proposedStopSchema>;
 
@@ -89,7 +102,7 @@ export const editOperationSchema = z.discriminatedUnion("op", [
   z.object({
     op: z.literal("update"),
     itemId: idSchema,
-    destinationId: idSchema,
+    destinationId: idSchema.nullable(),
     visitDurationMin: z.int().nullable(),
     fixedStartTime: localTimeSchema.nullable(),
     notes: z.string().nullable(),
@@ -143,6 +156,19 @@ export const aiDraftRequestSchema = z.object({
 });
 export const aiEditRequestSchema = z.object({
   instruction: z.string().trim().min(3).max(1000),
+  ai: aiConnectionSchema,
+});
+/** Model picker: the provider, plus the key for providers whose model list needs one. */
+export const aiModelsRequestSchema = z.object({
+  provider: aiProviderSchema,
+  apiKey: z.string().trim().min(10).max(500).optional(),
+});
+/** Travel chat: recent messages only (the server keeps no history) plus the caller's own AI key. */
+export const aiChatRequestSchema = z.object({
+  messages: z
+    .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().trim().min(1).max(8000) }))
+    .min(1)
+    .max(20),
   ai: aiConnectionSchema,
 });
 export const applyProposalRequestSchema = z.object({

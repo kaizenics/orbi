@@ -8,6 +8,7 @@ import {
   createItem,
   deleteDestination,
   deleteItem,
+  getDayStops,
   moveItem,
   reorderDay,
   updateDestination,
@@ -264,5 +265,31 @@ describe("export / import", () => {
       places: a.destinations.map((d) => [d.name, d.latitude, d.longitude]),
     });
     expect(shape(copy)).toEqual(shape(original));
+  });
+});
+
+describe("activities", () => {
+  it("adds location-free activities that are not routed and survive export/import", async () => {
+    const agg = await threeDayTrip();
+    const dayId = agg.days[0]!.id;
+    await createDestination(db, agg.trip.id, { ...place("Fort"), dayId });
+    await createItem(db, dayId, {
+      activity: { type: "breakfast", title: "Breakfast at the hotel" },
+      position: 0,
+      durationOverrideMin: 45,
+    });
+
+    const day = (await getTripAggregate(db, agg.trip.id)).days[0]!;
+    expect(day.items.map((i) => [i.activityType, i.title, i.durationOverrideMin])).toEqual([
+      ["breakfast", "Breakfast at the hotel", 45],
+      [null, null, null],
+    ]);
+    // Routing only sees places.
+    expect((await getDayStops(db, dayId)).stops.map((s) => s.name)).toEqual(["Fort"]);
+
+    const copy = await importTrip(db, await exportTrip(db, agg.trip.id), "local");
+    expect(copy.days[0]!.items[0]).toMatchObject({ destinationId: null, activityType: "breakfast" });
+    // Neither place nor activity is refused by validation.
+    await expect(createItem(db, dayId, {} as never)).rejects.toBeTruthy();
   });
 });

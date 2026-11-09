@@ -6,6 +6,7 @@ import {
   newId,
   notFound,
   type CreateDestinationInput,
+  type ActivityType,
   type CreateItemInput,
   type Destination,
   type ItineraryItem,
@@ -44,12 +45,15 @@ async function assertDayHasRoom(tx: DbOrTx, dayId: string) {
   }
 }
 
+/** What an item is: a saved place, or an activity without a location. */
+export type ItemTarget = string | { type: ActivityType; title: string };
+
 /** Inserts an item at `position` (default: end) and re-packs the day. */
 export async function insertItem(
   tx: DbOrTx,
   dayId: string,
-  destinationId: string,
-  fields: Omit<CreateItemInput, "destinationId">,
+  target: ItemTarget,
+  fields: Omit<CreateItemInput, "destinationId" | "activity">,
 ): Promise<string> {
   await assertDayHasRoom(tx, dayId);
   const ids = await dayItemIds(tx, dayId);
@@ -60,7 +64,9 @@ export async function insertItem(
     .values({
       id,
       tripDayId: dayId,
-      destinationId,
+      ...(typeof target === "string"
+        ? { destinationId: target }
+        : { destinationId: null, activityType: target.type, title: target.title }),
       position: -(ids.length + 1000), // temporary, rewritten below
       fixedStartTime: fields.fixedStartTime ?? null,
       durationOverrideMin: fields.durationOverrideMin ?? null,
@@ -203,12 +209,14 @@ export async function createItem(
 ): Promise<Mutation<ItineraryItem>> {
   return db.transaction(async (tx) => {
     const day = await getDayOrThrow(tx, dayId);
-    const dest = await getDestinationOrThrow(tx, input.destinationId);
-    // Same-trip invariant (database.md §4.5): enforced here, the single choke point.
-    if (dest.tripId !== day.tripId) throw notFound("Destination", input.destinationId);
+    const { destinationId, activity, ...fields } = input;
+    if (destinationId !== undefined) {
+      const dest = await getDestinationOrThrow(tx, destinationId);
+      // Same-trip invariant (database.md §4.5): enforced here, the single choke point.
+      if (dest.tripId !== day.tripId) throw notFound("Destination", destinationId);
+    }
     const revision = await touchTrip(tx, day.tripId, expectedRevision);
-    const { destinationId, ...fields } = input;
-    const id = await insertItem(tx, dayId, destinationId, fields);
+    const id = await insertItem(tx, dayId, destinationId ?? activity!, fields);
     return { value: toItem(await getItemOrThrow(tx, id)), revision };
   });
 }
@@ -221,6 +229,8 @@ export async function updateItem(
 ): Promise<Mutation<ItineraryItem>> {
   return db.transaction(async (tx) => {
     const item = await getItemOrThrow(tx, id);
+    if (item.activityType && input.title === null)
+      throw new OrbiError("validation", "An activity needs a title");
     const day = await getDayOrThrow(tx, item.tripDayId);
     const revision = await touchTrip(tx, day.tripId, expectedRevision);
     await tx

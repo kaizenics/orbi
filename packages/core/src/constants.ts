@@ -18,6 +18,22 @@ export const DESTINATION_CATEGORIES = [
 ] as const;
 export type DestinationCategory = (typeof DESTINATION_CATEGORIES)[number];
 
+/** Itinerary moments that are not a place on the map (they take time but have no location). */
+export const ACTIVITY_TYPES = [
+  "wake_up",
+  "breakfast",
+  "lunch",
+  "dinner",
+  "snack",
+  "rest",
+  "free_time",
+  "check_in",
+  "check_out",
+  "transfer",
+  "other",
+] as const;
+export type ActivityType = (typeof ACTIVITY_TYPES)[number];
+
 /** Where a destination's coordinates came from. Deliberately has no "ai" member: AI never supplies coordinates. */
 export const LOCATION_SOURCES = ["nominatim", "photon", "map_pin", "import", "seed"] as const;
 export type LocationSource = (typeof LOCATION_SOURCES)[number];

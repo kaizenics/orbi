@@ -52,7 +52,8 @@ export function buildMapFeatures(
     const color = colorForDay(dayIndex);
     const coordsByItem = new Map<string, [number, number]>();
     day.items.forEach((item, i) => {
-      const dest = byId.get(item.destinationId);
+      // Activities (no destination) are not on the map.
+      const dest = item.destinationId ? byId.get(item.destinationId) : undefined;
       if (!dest) return;
       const coordinates: [number, number] = [dest.longitude, dest.latitude];
       coordsByItem.set(item.id, coordinates);

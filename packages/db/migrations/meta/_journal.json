@@ -15,6 +15,13 @@
       "when": 1794229683153,
       "tag": "0001_trip_owner",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1794244587911,
+      "tag": "0002_item_activities",
+      "breakpoints": true
     }
   ]
 }

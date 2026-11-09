@@ -75,6 +75,8 @@ export function toItem(row: typeof itineraryItems.$inferSelect): ItineraryItem {
     id: row.id,
     tripDayId: row.tripDayId,
     destinationId: row.destinationId,
+    activityType: row.activityType,
+    title: row.title,
     position: row.position,
     fixedStartTime: row.fixedStartTime,
     durationOverrideMin: row.durationOverrideMin,

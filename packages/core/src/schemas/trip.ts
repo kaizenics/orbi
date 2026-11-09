@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   COST_SOURCES,
+  ACTIVITY_TYPES,
   DESTINATION_CATEGORIES,
   LIMITS,
   LOCATION_SOURCES,
@@ -27,6 +28,7 @@ import {
 export const travelModeSchema = z.enum(TRAVEL_MODES);
 export const paceSchema = z.enum(PACES);
 export const destinationCategorySchema = z.enum(DESTINATION_CATEGORIES);
+export const activityTypeSchema = z.enum(ACTIVITY_TYPES);
 export const locationSourceSchema = z.enum(LOCATION_SOURCES);
 
 const durationMinSchema = z
@@ -110,7 +112,12 @@ export type Destination = z.infer<typeof destinationSchema>;
 export const itineraryItemSchema = z.object({
   id: idSchema,
   tripDayId: idSchema,
-  destinationId: idSchema,
+  /** The place visited; null for an activity (wake up, breakfast, rest…), which has no location. */
+  destinationId: idSchema.nullable(),
+  /** Set for activities only. */
+  activityType: activityTypeSchema.nullable(),
+  /** Activity label, e.g. "Breakfast at the hotel"; null for places (they use the destination name). */
+  title: z.string().trim().min(1).max(120).nullable(),
   position: z.int().nonnegative(),
   fixedStartTime: localTimeSchema.nullable(),
   durationOverrideMin: durationMinSchema.nullable(),
@@ -134,7 +141,17 @@ export const tripAggregateSchema = z.object({
 export type TripAggregate = z.infer<typeof tripAggregateSchema>;
 
 export const tripSummarySchema = tripSchema
-  .pick({ id: true, name: true, regionName: true, startDate: true, endDate: true, updatedAt: true })
+  .pick({
+    id: true,
+    name: true,
+    regionName: true,
+    startDate: true,
+    endDate: true,
+    timezone: true,
+    currency: true,
+    budgetMinor: true,
+    updatedAt: true,
+  })
   .extend({ dayCount: z.int(), destinationCount: z.int() });
 export type TripSummary = z.infer<typeof tripSummarySchema>;
 
@@ -239,18 +256,24 @@ export const updateDayInputSchema = tripDaySchema
   .partial();
 export type UpdateDayInput = z.infer<typeof updateDayInputSchema>;
 
-export const createItemInputSchema = z.object({
-  destinationId: idSchema,
-  /** 0-based insert position; defaults to the end of the day. */
-  position: z.int().nonnegative().optional(),
-  fixedStartTime: localTimeSchema.nullish(),
-  durationOverrideMin: durationMinSchema.nullish(),
-  notes: textSchema.nullish(),
-});
+/** Schedules a saved place (`destinationId`) or adds an activity (`activity`) — exactly one. */
+export const createItemInputSchema = z
+  .object({
+    destinationId: idSchema.optional(),
+    activity: z.object({ type: activityTypeSchema, title: z.string().trim().min(1).max(120) }).optional(),
+    /** 0-based insert position; defaults to the end of the day. */
+    position: z.int().nonnegative().optional(),
+    fixedStartTime: localTimeSchema.nullish(),
+    durationOverrideMin: durationMinSchema.nullish(),
+    notes: textSchema.nullish(),
+  })
+  .refine((v) => (v.destinationId === undefined) !== (v.activity === undefined), {
+    message: "Give either destinationId or activity",
+  });
 export type CreateItemInput = z.infer<typeof createItemInputSchema>;
 
 export const updateItemInputSchema = itineraryItemSchema
-  .pick({ fixedStartTime: true, durationOverrideMin: true, travelModeToNext: true, notes: true })
+  .pick({ fixedStartTime: true, durationOverrideMin: true, travelModeToNext: true, notes: true, title: true })
   .partial();
 export type UpdateItemInput = z.infer<typeof updateItemInputSchema>;
 

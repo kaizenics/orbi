@@ -74,8 +74,10 @@ export async function importTrip(db: Db, file: TripExport, owner: string): Promi
         .values({ ...dayFields, id: dayId, tripId, dayIndex, date, createdAt: t, updatedAt: t })
         .run();
       for (const [position, item] of items.entries()) {
-        const destinationId = destIds.get(item.destinationId);
-        if (!destinationId) continue; // dangling reference in the file: skip the occurrence
+        // Activities have no destination; a place whose destination is missing from the file is skipped.
+        const destinationId = item.destinationId === null ? null : destIds.get(item.destinationId);
+        if (destinationId === undefined) continue;
+        if (destinationId === null && (!item.activityType || !item.title)) continue;
         await tx
           .insert(itineraryItems)
           .values({

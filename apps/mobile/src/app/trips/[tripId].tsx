@@ -1,7 +1,14 @@
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import { FlatList, Linking, Pressable, ScrollView, Text, View } from "react-native";
-import { computeDaySchedule, formatClock, type DayRoute, type TravelMode } from "@orbi/core";
+import {
+  computeDaySchedule,
+  formatClock,
+  itemDurationMin,
+  itemLegSeconds,
+  type DayRoute,
+  type TravelMode,
+} from "@orbi/core";
 import { buildNavigationLinks, formatDistance, formatDuration } from "@orbi/geo/utils";
 import { dayColor } from "@orbi/theme";
 import { ErrorState, Loading } from "@/components/state";
@@ -39,13 +46,13 @@ export default function TripScreen() {
     maxTravelMin: trip.data.preferences.maxDailyTravelMin,
     stops: items.map((i) => ({
       itemId: i.id,
-      durationMin: i.durationOverrideMin ?? byId.get(i.destinationId)?.visitDurationMin ?? 0,
+      durationMin: itemDurationMin(
+        i,
+        i.destinationId ? byId.get(i.destinationId)?.visitDurationMin : undefined,
+      ),
       fixedStartTime: i.fixedStartTime,
     })),
-    legSeconds: items.slice(0, -1).map((i) => {
-      const leg = dayRoute?.legs.find((l) => l.fromItemId === i.id);
-      return leg?.status === "routed" ? leg.durationS : null;
-    }),
+    legSeconds: itemLegSeconds(items, dayRoute?.legs),
   });
   /** Accessible reorder (no drag needed): swaps the item with its neighbour. */
   const shift = (index: number, by: -1 | 1) => {
@@ -113,7 +120,22 @@ export default function TripScreen() {
         }
         ListEmptyComponent={<Text className="text-sm text-muted-foreground">No stops on this day yet.</Text>}
         renderItem={({ item, index }) => {
-          const dest = byId.get(item.destinationId);
+          const time = schedule.stops[index]?.arrival;
+          if (item.activityType) {
+            // Activities (wake up, meals at the hotel…) have no place, so no map or navigation.
+            return (
+              <View className="flex-row items-center gap-3 rounded-lg border border-dashed border-border px-3 py-2">
+                <Text className="text-xs text-muted-foreground">
+                  {time != null ? formatClock(time) : "–"}
+                </Text>
+                <Text className="flex-1 text-sm text-foreground">{item.title}</Text>
+                <Text className="text-xs text-muted-foreground">
+                  {formatMinutes(itemDurationMin(item, undefined))}
+                </Text>
+              </View>
+            );
+          }
+          const dest = item.destinationId ? byId.get(item.destinationId) : undefined;
           if (!dest) return null;
           const leg = dayRoute?.legs.find((l) => l.fromItemId === item.id);
           const selected = selectedItemId === item.id;

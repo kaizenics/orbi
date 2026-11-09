@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { computeDaySchedule, formatClock, summarizeCosts, type ScheduleInput } from "./itinerary.ts";
+import {
+  computeDaySchedule,
+  formatClock,
+  itemLegSeconds,
+  summarizeCosts,
+  type ScheduleInput,
+} from "./itinerary.ts";
 import type { TripAggregate } from "./schemas/trip.ts";
 
 const base: ScheduleInput = {
@@ -103,5 +109,22 @@ describe("summarizeCosts", () => {
     expect(
       summarizeCosts({ ...data, trip: { budgetMinor: null } } as unknown as TripAggregate).remainingMinor,
     ).toBeNull();
+  });
+});
+
+describe("itemLegSeconds", () => {
+  it("routes between places only; activities take no travel", () => {
+    const items = [
+      { id: "wake", activityType: "wake_up" },
+      { id: "a", activityType: null },
+      { id: "lunch", activityType: "lunch" },
+      { id: "b", activityType: null },
+      { id: "c", activityType: null },
+    ];
+    const legs = [
+      { toItemId: "b", status: "routed", durationS: 600 },
+      { toItemId: "c", status: "unrouted" },
+    ];
+    expect(itemLegSeconds(items, legs)).toEqual([0, 0, 600, null]);
   });
 });
