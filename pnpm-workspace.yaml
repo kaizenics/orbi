@@ -24,3 +24,5 @@ catalog:
 
 minimumReleaseAgeExclude:
   - maplibre-gl@6.17.0
+  - "@ai-sdk/gateway@4.0.139"
+  - ai@7.0.166
