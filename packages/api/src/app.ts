@@ -7,6 +7,7 @@ import type { Db } from "@orbi/db";
 import { createAiModel, type AiConfig, type AiModel } from "@orbi/ai";
 import type { GeoProviders } from "@orbi/geo";
 import { bearerAuth } from "./http/auth.ts";
+import { ownedBy } from "./http/owner.ts";
 import { problem, problemFromError } from "./http/problem.ts";
 import { aiRoutes } from "./routes/ai.ts";
 import { configRoutes, dayRouteRoutes, placeRoutes } from "./routes/geo.ts";
@@ -51,6 +52,17 @@ export function createApp(deps: AppDeps) {
   });
   // Only methods with a body: the limiter re-wraps bodiless requests, which fails on Next.js requests.
   app.use((c, next) => (["POST", "PUT", "PATCH"].includes(c.req.method) ? limitBody(c, next) : next()));
+  // Every route that takes an ID checks that the record belongs to the caller's account.
+  const db = deps.db;
+  app.use("/trips/:tripId", ownedBy(db, "trip", "tripId"));
+  app.use("/trips/:tripId/*", ownedBy(db, "trip", "tripId"));
+  app.use("/destinations/:id", ownedBy(db, "destination", "id"));
+  app.use("/days/:id/*", ownedBy(db, "day", "id"));
+  app.use("/days/:id", ownedBy(db, "day", "id"));
+  app.use("/items/:id/*", ownedBy(db, "item", "id"));
+  app.use("/items/:id", ownedBy(db, "item", "id"));
+  app.use("/proposals/:id/*", ownedBy(db, "proposal", "id"));
+  app.use("/proposals/:id", ownedBy(db, "proposal", "id"));
   app.onError((error, c) => problemFromError(c, error));
   app.notFound((c) => problem(c, 404, "not_found", { detail: `No route for ${c.req.method} ${c.req.path}` }));
 

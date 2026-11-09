@@ -195,3 +195,42 @@ describe("auth and limits", () => {
     expect(res.status).toBe(413);
   });
 });
+
+describe("accounts", () => {
+  it("keeps each account's trips private", async () => {
+    const ana = { "x-orbi-user": "ana@example.com" };
+    const ben = { "x-orbi-user": "ben@example.com" };
+    const res = await send("POST", "/trips", { name: "Ana's trip", dayCount: 1 }, ana);
+    const trip = tripAggregateSchema.parse(await j(res));
+    expect(JSON.stringify(trip)).not.toContain("ana@example.com"); // owner never leaves the API
+    const place = {
+      name: "Fort",
+      latitude: 10.29,
+      longitude: 123.9,
+      locationSource: "seed",
+      dayId: trip.days[0]!.id,
+    };
+    const added = await send("POST", `/trips/${trip.trip.id}/destinations`, place, ana);
+    expect(added.status).toBe(201);
+    // Ben cannot add to Ana's trip either.
+    expect((await send("POST", `/trips/${trip.trip.id}/destinations`, place, ben)).status).toBe(404);
+    const destId = ((await j(added)) as { data: { id: string } }).data.id;
+    const itemId = (await j(await send("GET", `/trips/${trip.trip.id}`, undefined, ana))) as TripAggregate;
+
+    expect(await j(await send("GET", "/trips", undefined, ben))).toEqual([]);
+    expect(await j(await send("GET", "/trips", undefined, ana))).toHaveLength(1);
+    // Ben gets 404 for every route that names Ana's records.
+    for (const [method, path] of [
+      ["GET", `/trips/${trip.trip.id}`],
+      ["DELETE", `/trips/${trip.trip.id}`],
+      ["GET", `/trips/${trip.trip.id}/export`],
+      ["PATCH", `/destinations/${destId}`],
+      ["PATCH", `/days/${trip.days[0]!.id}`],
+      ["DELETE", `/items/${itemId.days[0]!.items[0]!.id}`],
+    ] as const) {
+      const r = await send(method, path, method === "PATCH" ? { notes: "x" } : undefined, ben);
+      expect(r.status, `${method} ${path}`).toBe(404);
+    }
+    expect((await send("GET", `/trips/${trip.trip.id}`, undefined, ana)).status).toBe(200);
+  });
+});
