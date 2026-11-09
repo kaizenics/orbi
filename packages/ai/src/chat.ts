@@ -106,7 +106,17 @@ export interface ChatMessage {
 
 /** Events the chat stream emits; the API turns them into the HTTP response. */
 export type ChatEvent =
-  { type: "text"; text: string } | { type: "trip"; trip: ChatTrip } | { type: "error"; message: string };
+  | { type: "text"; text: string }
+  | { type: "trip"; trip: ChatTrip }
+  | { type: "edit"; trip: string; instruction: string }
+  | { type: "error"; message: string };
+
+/** The caller's trips by name (a few tokens), so "my Cebu trip" can be found. */
+export interface ChatContext {
+  tripNames: string[];
+  /** Name of the trip open on screen, if any. */
+  currentTrip?: string;
+}
 
 /** Only the latest messages are sent to the model: older context costs tokens and rarely helps. */
 const HISTORY = 6;
@@ -116,7 +126,8 @@ const MAX_OUTPUT_TOKENS = 3000;
 const SYSTEM = `You are ORBI, a friendly travel assistant inside a trip-planning app.
 Scope: travel only (destinations, itineraries, sights, food, transport, budgets, packing, safety, culture). Politely decline anything else in one sentence, including programming/code, maths homework, politics and adult content. Never write code. Keep language clean.
 Be brief: at most 120 words, plain sentences or short bullet lists, no filler.
-If the user pastes or describes a day-by-day itinerary, or asks you to create/build a trip, call create_trip once with every day and stop in order (real, official place names; never coordinates). Keep every activity the user listed (wake up, meals, rests...) and fill obvious gaps. Do not repeat the itinerary in text.
+If the user asks to change one of their existing trips (add, remove, move or retime stops, make a day lighter…), call edit_trip with that trip's exact name and a clear, complete instruction; when they say "this trip" use the trip on screen. Do not describe the edit in text first.
+If the user pastes or describes a day-by-day itinerary, or asks you to create/build a new trip, call create_trip once with every day and stop in order (real, official place names; never coordinates). Keep every activity the user listed (wake up, meals, rests...) and fill obvious gaps. Do not repeat the itinerary in text.
 ${DETAILED_DAY}`;
 
 const CODE_HINTS =
@@ -145,6 +156,7 @@ export async function* travelChat(
   model: LanguageModel,
   messages: ChatMessage[],
   abortSignal?: AbortSignal,
+  context: ChatContext = { tripNames: [] },
 ): AsyncGenerator<ChatEvent> {
   const last = messages.at(-1);
   const refusal = last?.role === "user" ? screenMessage(last.content) : null;
@@ -155,7 +167,15 @@ export async function* travelChat(
 
   const result = streamText({
     model,
-    system: SYSTEM,
+    system: [
+      SYSTEM,
+      context.tripNames.length
+        ? `The user's trips: ${context.tripNames.map((n) => JSON.stringify(n)).join(", ")}.`
+        : "The user has no trips yet.",
+      context.currentTrip ? `On screen: ${JSON.stringify(context.currentTrip)}.` : "",
+    ]
+      .filter(Boolean)
+      .join("\n"),
     messages: messages.slice(-HISTORY),
     maxOutputTokens: MAX_OUTPUT_TOKENS,
     temperature: 0.4,
@@ -164,6 +184,13 @@ export async function* travelChat(
       create_trip: tool({
         description: "Create a trip in ORBI from an itinerary the traveller pasted or asked for.",
         inputSchema: looseTrip,
+      }),
+      edit_trip: tool({
+        description: "Change one of the user's existing trips.",
+        inputSchema: z.object({
+          trip: z.string().describe("Exact name of the trip to change, from the user's trips"),
+          instruction: z.string().describe("The full change to make, e.g. 'Move Fort San Pedro to day 2'"),
+        }),
       }),
     },
     // One model step only: the tool is executed by the API, which then reports the result itself.
@@ -177,6 +204,13 @@ export async function* travelChat(
         const trip = normalizeChatTrip(part.input);
         if (trip) yield { type: "trip", trip };
         else yield { type: "error", message: "I couldn't read that itinerary. Try listing it day by day." };
+      } else if (part.type === "tool-call" && part.toolName === "edit_trip") {
+        const input = part.input as { trip?: unknown; instruction?: unknown };
+        const instruction =
+          typeof input.instruction === "string" ? input.instruction.trim().slice(0, 1000) : "";
+        if (instruction.length >= 3)
+          yield { type: "edit", trip: typeof input.trip === "string" ? input.trip : "", instruction };
+        else yield { type: "error", message: "Tell me what you'd like to change in that trip." };
       } else if (part.type === "error") throw part.error;
     }
   } catch (error) {

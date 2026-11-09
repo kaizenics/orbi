@@ -170,6 +170,8 @@ export const aiChatRequestSchema = z.object({
     .min(1)
     .max(20),
   ai: aiConnectionSchema,
+  /** The trip open on screen, so "this trip" can be edited. */
+  tripId: idSchema.optional(),
 });
 export const applyProposalRequestSchema = z.object({
   /** Draft stop keys or edit operation indexes (as strings) the user unticked. */

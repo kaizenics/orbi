@@ -5,6 +5,7 @@ export {
   chatTripSchema,
   screenMessage,
   travelChat,
+  type ChatContext,
   type ChatEvent,
   type ChatMessage,
   type ChatTrip,

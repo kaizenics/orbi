@@ -12,7 +12,7 @@ const usage = {
 const finish = { type: "finish" as const, finishReason: { unified: "stop" as const, raw: undefined }, usage };
 
 /** A model that streams the given chunks; `calls` counts how often the API used it. */
-async function setup(chunks: unknown[]) {
+async function setup(chunks: unknown[], generated: unknown = {}) {
   const calls: number[] = [];
   const deps = await testDeps({
     createModel: (config) => {
@@ -21,6 +21,13 @@ async function setup(chunks: unknown[]) {
         model: new MockLanguageModelV4({
           doStream: async () => {
             return { stream: simulateReadableStream({ chunks: [...chunks, finish] as never[] }) };
+          },
+          // Structured follow-up calls (the edit pipeline) answer with `generated`.
+          doGenerate: {
+            content: [{ type: "text", text: JSON.stringify(generated) }],
+            finishReason: { unified: "stop", raw: undefined },
+            usage,
+            warnings: [],
           },
         }),
         provider: config.provider,
@@ -94,5 +101,55 @@ describe("travel chat", () => {
     expect(trip.trip).toMatchObject({ name: "Cebu weekend", startDate: "2026-12-01", endDate: "2026-12-02" });
     expect(trip.days.map((d) => d.items.length)).toEqual([1, 1]);
     expect((await get("ben@example.com")).status).toBe(404); // private to the account that asked
+  });
+});
+
+describe("editing trips from the chat", () => {
+  it("edits the caller's trip by name and never another account's", async () => {
+    const editCall = {
+      type: "tool-call",
+      toolCallId: "e1",
+      toolName: "edit_trip",
+      input: JSON.stringify({ trip: "Cebu 3D2N", instruction: "Remove the beach" }),
+    };
+    const { app, chat } = await setup([editCall], {
+      summary: "Removed the beach",
+      operations: [{ op: "remove", stop: "s1" }],
+    });
+    const make = async (user: string) => {
+      const headers = { "Content-Type": "application/json", "x-orbi-user": user };
+      const trip = tripAggregateSchema.parse(
+        await (
+          await app.request("/trips", {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ name: "Cebu 3D2N", dayCount: 1 }),
+          })
+        ).json(),
+      );
+      await app.request(`/trips/${trip.trip.id}/destinations`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          name: "Beach",
+          latitude: 10.3,
+          longitude: 123.9,
+          locationSource: "map_pin",
+          dayId: trip.days[0]!.id,
+        }),
+      });
+      return trip.trip.id;
+    };
+    const bens = await make("ben@example.com");
+    const anas = await make("ana@example.com");
+
+    const events = await chat("Remove the beach from my Cebu 3D2N trip");
+    expect(events.find((e) => e.edited)?.edited).toMatchObject({ id: anas, applied: 1 });
+    const items = async (id: string, user: string) =>
+      tripAggregateSchema.parse(
+        await (await app.request(`/trips/${id}`, { headers: { "x-orbi-user": user } })).json(),
+      ).days[0]!.items.length;
+    expect(await items(anas, "ana@example.com")).toBe(0);
+    expect(await items(bens, "ben@example.com")).toBe(1); // same name, other account: untouched
   });
 });

@@ -28,6 +28,7 @@ import {
   discardProposal,
   getProposal,
   getTripAggregate,
+  listTrips,
   type Db,
 } from "@orbi/db";
 import type { Geocoder } from "@orbi/geo";
@@ -96,15 +97,52 @@ export function aiRoutes(deps: AiRouteDeps) {
     };
   }
 
+  /**
+   * Applies a chat edit to one of the caller's trips: the existing edit pipeline proposes the
+   * operations, and everything that can be applied is applied (the user asked for it in the chat).
+   */
+  async function editTripFromChat(model: AiModel["model"], tripId: string, instruction: string) {
+    const trip = await getTripAggregate(deps.db, tripId);
+    const payload = await proposeEdit({ model, geocode }, trip, instruction);
+    if (payload.kind !== "edit" || payload.operations.length === 0) {
+      return { id: tripId, name: trip.trip.name, summary: payload.summary, applied: 0 };
+    }
+    const proposal = await createProposal(deps.db, tripId, payload);
+    // New places the geocoder could not find cannot be added.
+    const skip = payload.operations.flatMap((op, i) =>
+      op.op === "add" && !op.stop.location ? [String(i)] : [],
+    );
+    if (skip.length < payload.operations.length) await applyProposal(deps.db, proposal.id, skip);
+    return {
+      id: tripId,
+      name: trip.trip.name,
+      summary: payload.summary,
+      applied: payload.operations.length - skip.length,
+    };
+  }
+
   return new Hono()
     .post("/ai/models", validate("json", aiModelsRequestSchema), async (c) => {
       const { provider, apiKey } = c.req.valid("json");
       return c.json(await listCheapModels(provider, apiKey));
     })
-    .post("/ai/chat", validate("json", aiChatRequestSchema), (c) => {
-      const { messages, ai } = c.req.valid("json");
+    .post("/ai/chat", validate("json", aiChatRequestSchema), async (c) => {
+      const { messages, ai, tripId } = c.req.valid("json");
       const owner = ownerOf(c);
       const model = deps.createModel(ai).model;
+      // Only the caller's own trips are offered, and edits can only target them.
+      const trips = await listTrips(deps.db, owner);
+      const current = trips.find((t) => t.id === tripId);
+      const findTrip = (name: string) => {
+        const n = name.trim().toLowerCase();
+        return (
+          trips.find((t) => t.name.toLowerCase() === n) ??
+          (n
+            ? trips.find((t) => t.name.toLowerCase().includes(n) || n.includes(t.name.toLowerCase()))
+            : undefined) ??
+          current
+        );
+      };
       c.header("Content-Type", "application/x-ndjson; charset=utf-8");
       c.header("Cache-Control", "no-store");
       // One JSON object per line: {"text"} chunks while the model writes, then {"trip"} or {"error"}.
@@ -112,10 +150,24 @@ export function aiRoutes(deps: AiRouteDeps) {
         const send = (event: object) =>
           out.write(`${JSON.stringify(event)}
 `);
-        for await (const event of travelChat(model, messages, c.req.raw.signal)) {
+        const context = { tripNames: trips.slice(0, 50).map((t) => t.name), currentTrip: current?.name };
+        for await (const event of travelChat(model, messages, c.req.raw.signal, context)) {
           if (event.type === "text") await send({ text: event.text });
           else if (event.type === "error") await send({ error: event.message });
-          else {
+          else if (event.type === "edit") {
+            const target = findTrip(event.trip);
+            if (!target) {
+              await send({ error: "I couldn't tell which trip to change. Open it, or say its name." });
+              continue;
+            }
+            await send({ status: `Updating ${target.name}…` });
+            try {
+              await send({ edited: await editTripFromChat(model, target.id, event.instruction) });
+            } catch (error) {
+              deps.log?.(`chat trip edit failed: ${String(error)}`);
+              await send({ error: error instanceof Error ? error.message : "I couldn't change that trip." });
+            }
+          } else {
             await send({ status: "Creating your trip and finding each place on the map…" });
             try {
               await send({ trip: await createTripFromChat(owner, event.trip) });

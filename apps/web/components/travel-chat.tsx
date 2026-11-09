@@ -1,135 +1,45 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowUp, MapPinned, MessageCircle, Square, Trash2, X } from "lucide-react";
+import { ArrowUp, Loader2, MapPinned, MessageCircle, Minus, Square, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAiConnection } from "@/lib/ai-connection";
+import { clearChat, sendChat, setChatOpen, stopChat, useChat } from "@/lib/chat-store";
 import { queryKeys } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 
-interface CreatedTrip {
-  id: string;
-  name: string;
-  added: number;
-  missing: string[];
-}
-interface Message {
-  role: "user" | "assistant";
-  content: string;
-  trip?: CreatedTrip;
-  status?: string;
-  error?: boolean;
-}
-
-/** Only the latest turns go to the server (it also trims): fewer tokens per answer. */
-const SENT_HISTORY = 6;
-const STORAGE_KEY = "orbi.chat";
-const KEPT_MESSAGES = 60;
-
-/** Saved conversation; half-finished answers from an interrupted stream are dropped. */
-const loadMessages = (): Message[] => {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]") as Message[];
-    return saved
-      .filter((m) => m && (m.role === "user" || m.role === "assistant") && (m.content || m.trip))
-      .map(({ status: _status, ...m }) => m);
-  } catch {
-    return [];
-  }
-};
-
-/** Floating travel assistant: streams answers and turns a pasted itinerary into a whole trip. */
+/** Floating travel assistant: streams answers, creates trips from itineraries and edits trips. */
 export function TravelChat() {
   const connection = useAiConnection();
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { messages, busy, open, unread } = useChat();
+  const status = messages.at(-1)?.status;
   const [input, setInput] = useState("");
-  const [busy, setBusy] = useState(false);
-  const abort = useRef<AbortController | null>(null);
   const bottom = useRef<HTMLDivElement>(null);
+  // The trip on screen, so "change this trip" works.
+  const tripId = usePathname().match(/^\/trips\/([^/]+)/)?.[1];
 
-  // The conversation lives in this browser (like the AI key), so it survives reloads and restarts.
-  // Saving starts only after the saved chat has been put into state (a render later); otherwise the
-  // empty first render would be saved over it (React runs effects twice in development).
-  const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
-    setMessages(loadMessages());
-    setHydrated(true);
-  }, []);
-  useEffect(() => {
-    if (hydrated && !busy) {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-KEPT_MESSAGES)));
-      } catch {
-        // storage blocked or full: the chat simply starts fresh next time
-      }
-    }
     bottom.current?.scrollIntoView({ block: "end" });
-  }, [messages, busy, hydrated]);
+  }, [messages, open]);
 
-  const update = (patch: (m: Message) => Message) =>
-    setMessages((all) => [...all.slice(0, -1), patch(all.at(-1)!)]);
-
-  async function send(text: string) {
-    if (!connection || busy || !text.trim()) return;
-    const history: Message[] = [...messages, { role: "user", content: text.trim() }];
-    setMessages([...history, { role: "assistant", content: "" }]);
+  const send = (text: string) => {
+    if (!connection) return;
     setInput("");
-    setBusy(true);
-    abort.current = new AbortController();
-    try {
-      const res = await fetch("/api/ai/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: abort.current.signal,
-        body: JSON.stringify({
-          ai: connection,
-          messages: history
-            .filter((m) => m.content && !m.error)
-            .slice(-SENT_HISTORY)
-            .map(({ role, content }) => ({ role, content: content.slice(0, 8000) })),
-        }),
-      });
-      if (!res.ok || !res.body) throw new Error(`Request failed (${res.status})`);
-      const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
-      let buffer = "";
-      for (;;) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buffer += value;
-        const lines = buffer.split("\n");
-        buffer = lines.pop()!;
-        for (const line of lines.filter(Boolean)) {
-          const event = JSON.parse(line) as {
-            text?: string;
-            status?: string;
-            trip?: CreatedTrip;
-            error?: string;
-          };
-          if (event.text) update((m) => ({ ...m, content: m.content + event.text }));
-          if (event.status) update((m) => ({ ...m, status: event.status }));
-          if (event.error)
-            update((m) => ({ ...m, status: undefined, error: true, content: m.content || event.error! }));
-          if (event.trip) {
-            const trip = event.trip;
-            update((m) => ({ ...m, status: undefined, trip }));
-            void queryClient.invalidateQueries({ queryKey: queryKeys.trips });
-          }
-        }
-      }
-    } catch (e) {
-      if ((e as Error).name !== "AbortError")
-        update((m) => ({ ...m, error: true, content: m.content || "Something went wrong. Try again." }));
-    } finally {
-      update((m) => ({ ...m, status: undefined }));
-      setBusy(false);
-      abort.current = null;
-    }
-  }
+    // ["trips"] is the prefix of every trip query, so the open trip refreshes too.
+    void sendChat(
+      text,
+      connection,
+      tripId,
+      () => void queryClient.invalidateQueries({ queryKey: queryKeys.trips }),
+    );
+  };
+  const setOpen = (next: boolean | ((o: boolean) => boolean)) =>
+    setChatOpen(typeof next === "function" ? next(open) : next);
 
   return (
     <>
@@ -145,7 +55,7 @@ export function TravelChat() {
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold">ORBI assistant</p>
               <p className="truncate text-xs text-muted-foreground">
-                Travel questions, or paste an itinerary
+                Ask, paste an itinerary, or edit a trip
               </p>
             </div>
             {messages.length ? (
@@ -155,7 +65,7 @@ export function TravelChat() {
                 className="size-8 text-muted-foreground"
                 aria-label="Clear chat"
                 disabled={busy}
-                onClick={() => setMessages([])}
+                onClick={clearChat}
               >
                 <Trash2 aria-hidden />
               </Button>
@@ -164,10 +74,11 @@ export function TravelChat() {
               variant="ghost"
               size="icon"
               className="size-8 text-muted-foreground"
-              aria-label="Close chat"
+              aria-label="Minimize chat"
+              title="Minimize (replies keep running)"
               onClick={() => setOpen(false)}
             >
-              <X aria-hidden />
+              <Minus aria-hidden />
             </Button>
           </header>
 
@@ -208,8 +119,32 @@ export function TravelChat() {
                     m.error && "text-destructive",
                   )}
                 >
-                  {m.content || (m.status || m.trip ? null : <span className="animate-pulse">…</span>)}
+                  {m.content || (m.status || m.trip || m.edited ? null : <TypingDots />)}
                   {m.status ? <p className="text-xs text-muted-foreground">{m.status}</p> : null}
+                  {m.edited ? (
+                    <div className="mt-1 flex flex-col gap-1.5">
+                      <p>
+                        {m.edited.applied ? (
+                          <>
+                            Updated <strong>{m.edited.name}</strong> ({m.edited.applied} change
+                            {m.edited.applied === 1 ? "" : "s"}).
+                          </>
+                        ) : (
+                          <>
+                            No changes were needed in <strong>{m.edited.name}</strong>.
+                          </>
+                        )}
+                      </p>
+                      {m.edited.summary ? (
+                        <p className="text-xs text-muted-foreground">{m.edited.summary}</p>
+                      ) : null}
+                      {tripId !== m.edited.id ? (
+                        <Button asChild size="sm" className="self-start">
+                          <Link href={`/trips/${m.edited.id}`}>Open trip</Link>
+                        </Button>
+                      ) : null}
+                    </div>
+                  ) : null}
                   {m.trip ? (
                     <div className="mt-1 flex flex-col gap-1.5">
                       <p>
@@ -257,13 +192,7 @@ export function TravelChat() {
               className="max-h-32 min-h-9 resize-none"
             />
             {busy ? (
-              <Button
-                type="button"
-                size="icon"
-                variant="outline"
-                aria-label="Stop"
-                onClick={() => abort.current?.abort()}
-              >
+              <Button type="button" size="icon" variant="outline" aria-label="Stop" onClick={stopChat}>
                 <Square aria-hidden />
               </Button>
             ) : (
@@ -275,15 +204,49 @@ export function TravelChat() {
         </section>
       ) : null}
 
+      {!open && busy ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="fixed right-4 bottom-20 z-50 flex max-w-[min(280px,calc(100vw-2rem))] items-center gap-2 rounded-full border bg-card px-3.5 py-2 text-sm shadow-lg hover:bg-muted"
+        >
+          <Loader2 aria-hidden className="size-4 shrink-0 animate-spin text-muted-foreground" />
+          <span role="status" className="truncate">
+            {status ?? "ORBI is replying…"}
+          </span>
+        </button>
+      ) : null}
       <Button
         size="icon"
-        aria-label={open ? "Close chat" : "Open travel chat"}
+        aria-label={open ? "Minimize chat" : unread ? "Open travel chat (new reply)" : "Open travel chat"}
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
         className="fixed right-4 bottom-4 z-50 size-12 rounded-full shadow-lg [&_svg]:size-5"
       >
-        {open ? <X aria-hidden /> : <MessageCircle aria-hidden />}
+        {open ? <Minus aria-hidden /> : <MessageCircle aria-hidden />}
+        {!open && unread ? (
+          <span
+            aria-hidden
+            className="absolute top-0.5 right-0.5 size-3 rounded-full border-2 border-background bg-emerald-500"
+          />
+        ) : null}
       </Button>
     </>
+  );
+}
+
+/** "Thinking" indicator: three dots bouncing in turn, as in other chat apps. */
+function TypingDots() {
+  return (
+    <span role="status" aria-label="ORBI is typing" className="flex h-5 items-center gap-1 px-0.5">
+      {[0, 150, 300].map((delay) => (
+        <span
+          key={delay}
+          aria-hidden
+          className="size-1.5 animate-bounce rounded-full bg-muted-foreground/70 motion-reduce:animate-pulse"
+          style={{ animationDelay: `${delay}ms`, animationDuration: "1s" }}
+        />
+      ))}
+    </span>
   );
 }
