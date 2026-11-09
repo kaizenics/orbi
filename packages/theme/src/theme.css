@@ -25,8 +25,9 @@
   --radius: 0.5rem;
 }
 
+/* The system setting applies unless the user picked a theme (web: data-theme on <html>). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --background: #191919;
     --foreground: #ededec;
     --card: #202020;
@@ -46,6 +47,27 @@
     --input: #2f2f2e;
     --ring: #6fb3e0;
   }
+}
+
+:root[data-theme="dark"] {
+  --background: #191919;
+  --foreground: #ededec;
+  --card: #202020;
+  --card-foreground: #ededec;
+  --popover: #202020;
+  --popover-foreground: #ededec;
+  --primary: #ededec;
+  --primary-foreground: #191919;
+  --secondary: #2a2a29;
+  --secondary-foreground: #ededec;
+  --muted: #2a2a29;
+  --muted-foreground: #9b9a97;
+  --accent: #1d3a4d;
+  --accent-foreground: #a7d4f2;
+  --destructive: #e57373;
+  --border: #2f2f2e;
+  --input: #2f2f2e;
+  --ring: #6fb3e0;
 }
 
 @theme inline {
