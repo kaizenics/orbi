@@ -24,7 +24,7 @@ export function TripView({ tripId }: { tripId: string }) {
       <PlannerShell
         panel={
           <PanelMessage title={trip.error.message}>
-            <Link href="/" className="underline">
+            <Link href="/trips" className="underline">
               Back to trips
             </Link>
           </PanelMessage>

@@ -69,7 +69,7 @@ export function TripHeader({
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <Link
-          href="/"
+          href="/trips"
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft aria-hidden className="size-4" /> Trips
@@ -90,7 +90,7 @@ export function TripHeader({
             className="rounded-md p-1.5 text-muted-foreground hover:text-destructive"
             onClick={() => {
               if (window.confirm(`Delete "${trip.name}" and everything in it? This cannot be undone.`)) {
-                del.mutate(trip.id, { onSuccess: () => router.push("/") });
+                del.mutate(trip.id, { onSuccess: () => router.push("/trips") });
               }
             }}
           >

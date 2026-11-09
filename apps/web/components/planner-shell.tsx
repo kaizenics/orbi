@@ -8,7 +8,7 @@ export function PlannerShell({ panel, map }: { panel: React.ReactNode; map: Reac
     <main className="flex min-h-dvh flex-col lg:h-dvh lg:flex-row">
       <aside className="flex w-full flex-col border-b bg-card lg:w-[440px] lg:shrink-0 lg:border-r lg:border-b-0">
         <header className="flex items-center justify-between border-b px-6 py-4">
-          <Link href="/" className="text-lg font-semibold tracking-tight">
+          <Link href="/trips" className="text-lg font-semibold tracking-tight">
             {APP_NAME}
           </Link>
           <ServerStatus />

@@ -1,11 +1,12 @@
+import { authConfig } from "@/lib/session";
 import { MapPlaceholder, PlannerShell } from "@/components/planner-shell";
 import { TripList } from "@/components/trip-list";
 
-export default function HomePage() {
+export default function TripsPage() {
   const panel = (
     <>
       <TripList />
-      {process.env.ORBI_WEB_PASSWORD ? (
+      {authConfig() ? (
         <form method="post" action="/auth/logout" className="mt-auto">
           <button type="submit" className="text-sm text-muted-foreground underline hover:text-foreground">
             Log out
