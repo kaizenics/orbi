@@ -1,0 +1,6 @@
+# Caddy obtains and renews a Let's Encrypt certificate for ORBI_DOMAIN automatically
+# (ports 80 and 443 must be reachable from the internet).
+{$ORBI_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy server:3100
+}

@@ -1,0 +1,43 @@
+# ORBI server + automatic HTTPS (Caddy). Run on the VM from the repository root:
+#   cp infra/.env.example infra/.env   # then edit it
+#   docker compose -f infra/docker-compose.yml up -d --build
+# Optional local AI: add --profile ollama (then set AI_PROVIDER=ollama, OLLAMA_BASE_URL=http://ollama:11434).
+services:
+  server:
+    build:
+      context: ..
+      dockerfile: apps/server/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - orbi-data:/data
+    expose:
+      - "3100"
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      ORBI_DOMAIN: ${ORBI_DOMAIN:?Set ORBI_DOMAIN in infra/.env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - server
+
+  ollama:
+    image: ollama/ollama
+    profiles: ["ollama"]
+    restart: unless-stopped
+    volumes:
+      - ollama-models:/root/.ollama
+
+volumes:
+  orbi-data:
+  caddy-data:
+  caddy-config:
+  ollama-models:
