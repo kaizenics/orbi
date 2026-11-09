@@ -36,7 +36,9 @@ export async function proxy(request: NextRequest) {
   const isApi = pathname === "/api" || pathname.startsWith("/api/");
 
   // Fail closed: never publish the API or trips through an app without sign-in.
-  if (!auth && (apiToken || process.env.VERCEL) && !PUBLIC(pathname)) {
+  // Production builds also fail closed unless ORBI_ALLOW_OPEN=1 (trusted local use only).
+  const openAllowed = process.env.NODE_ENV !== "production" || process.env.ORBI_ALLOW_OPEN === "1";
+  if (!auth && (apiToken || process.env.VERCEL || !openAllowed) && !PUBLIC(pathname)) {
     return problem(503, "misconfigured", "Configure Google sign-in before deploying ORBI");
   }
 
