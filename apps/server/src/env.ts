@@ -39,8 +39,25 @@ const envSchema = z
     /** Minimum gap between requests to one provider. Keep >= 1000 for public instances. */
     GEO_MIN_INTERVAL_MS: z.coerce.number().int().min(0).default(1100),
     CACHE_TTL_DAYS: z.coerce.number().int().min(1).max(365).default(30),
+
+    // AI (optional). Unset = AI features off, everything else works.
+    AI_PROVIDER: z.enum(["openrouter", "ollama"]).optional(),
+    AI_MODEL: z.string().min(1).optional(),
+    /** Server-side only. Never put it in NEXT_PUBLIC_* or EXPO_PUBLIC_* variables. */
+    OPENROUTER_API_KEY: z.string().min(10).optional(),
+    OLLAMA_BASE_URL: z.url().default("http://127.0.0.1:11434"),
   })
   .superRefine((env, ctx) => {
+    if (env.AI_PROVIDER && !env.AI_MODEL) {
+      ctx.addIssue({ code: "custom", path: ["AI_MODEL"], message: "required when AI_PROVIDER is set" });
+    }
+    if (env.AI_PROVIDER === "openrouter" && !env.OPENROUTER_API_KEY) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["OPENROUTER_API_KEY"],
+        message: "required when AI_PROVIDER=openrouter",
+      });
+    }
     if (!LOOPBACK.has(env.ORBI_HOST) && !env.ORBI_API_TOKEN) {
       ctx.addIssue({
         code: "custom",

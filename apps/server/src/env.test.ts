@@ -23,4 +23,13 @@ describe("parseEnv", () => {
   it("rejects short tokens", () => {
     expect(() => parseEnv({ ORBI_API_TOKEN: "short" })).toThrow(/at least 16/);
   });
+
+  it("keeps AI off by default and validates AI settings together", () => {
+    expect(parseEnv({}).AI_PROVIDER).toBeUndefined();
+    expect(() => parseEnv({ AI_PROVIDER: "ollama" })).toThrow(/AI_MODEL: required/);
+    expect(() => parseEnv({ AI_PROVIDER: "openrouter", AI_MODEL: "x/y:free" })).toThrow(/OPENROUTER_API_KEY/);
+    expect(parseEnv({ AI_PROVIDER: "ollama", AI_MODEL: "qwen3:8b" }).OLLAMA_BASE_URL).toBe(
+      "http://127.0.0.1:11434",
+    );
+  });
 });

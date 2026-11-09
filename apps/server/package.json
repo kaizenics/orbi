@@ -11,10 +11,12 @@
     "lint": "eslint . --max-warnings 0",
     "check-types": "tsc --noEmit",
     "test": "vitest run",
-    "db:seed": "node --env-file-if-exists=.env src/seed.ts"
+    "db:seed": "node --env-file-if-exists=.env src/seed.ts",
+    "ai:eval": "node --env-file-if-exists=.env src/ai-eval.ts"
   },
   "dependencies": {
     "@hono/node-server": "2.1.6",
+    "@orbi/ai": "workspace:*",
     "@orbi/api": "workspace:*",
     "@orbi/core": "workspace:*",
     "@orbi/db": "workspace:*",
