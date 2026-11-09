@@ -102,22 +102,44 @@ async function locate(
   area: LatLng | undefined,
   geocode: Geocode,
 ): Promise<ProposedStop> {
-  const query = [stop.name, stop.localityHint].filter(Boolean).join(", ");
-  const candidates = await geocode(query, area);
-  const location =
-    candidates.find(
-      (c) => !area || distanceKm(area, { lat: c.latitude, lng: c.longitude }) <= MAX_DISTANCE_FROM_AREA_KM,
-    ) ?? null;
-  return {
+  const base = {
     key,
     name: stop.name,
     category: stop.category,
     visitDurationMin: stop.visitDurationMin,
     estCostMinor: stop.estCost === null ? null : Math.round(stop.estCost * 100),
     why: stop.why,
-    query,
-    location,
   };
+  // Activities (wake up, breakfast at the hotel…) have no location: nothing to look up.
+  if (stop.activity) return { ...base, query: "", location: null, activityType: stop.activity };
+  const query = [stop.name, stop.localityHint].filter(Boolean).join(", ");
+  const candidates = await geocode(query, area);
+  const location =
+    candidates.find(
+      (c) => !area || distanceKm(area, { lat: c.latitude, lng: c.longitude }) <= MAX_DISTANCE_FROM_AREA_KM,
+    ) ?? null;
+  return { ...base, query, location, activityType: null };
+}
+
+/**
+ * Looks up every AI-named stop with the geocoder, near `region` when given. Sequential on purpose:
+ * the geocoder is rate limited (1 req/s on public Nominatim).
+ */
+export async function locateItinerary(
+  days: AiDraftOutput["days"],
+  region: string | null,
+  geocode: Geocode,
+): Promise<{ title: string; stops: ProposedStop[] }[]> {
+  const [hit] = region ? await geocode(region, undefined) : [];
+  const area = hit ? { lat: hit.latitude, lng: hit.longitude } : undefined;
+  const out = [];
+  for (const [i, day] of days.entries()) {
+    const stops: ProposedStop[] = [];
+    for (const [j, stop] of day.stops.entries())
+      stops.push(await locate(stop, `d${i + 1}s${j + 1}`, area, geocode));
+    out.push({ title: day.title, stops });
+  }
+  return out;
 }
 
 /** Natural-language request → reviewable draft for the trip's existing days. Writes nothing. */
