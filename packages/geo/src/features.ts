@@ -51,8 +51,9 @@ export function buildMapFeatures(
   data.days.forEach((day, dayIndex) => {
     const color = colorForDay(dayIndex);
     const coordsByItem = new Map<string, [number, number]>();
-    day.items.forEach((item, i) => {
-      // Activities (no destination) are not on the map.
+    let number = 0;
+    day.items.forEach((item) => {
+      // Activities (no destination) are not on the map and are not numbered, matching the day plan.
       const dest = item.destinationId ? byId.get(item.destinationId) : undefined;
       if (!dest) return;
       const coordinates: [number, number] = [dest.longitude, dest.latitude];
@@ -64,7 +65,7 @@ export function buildMapFeatures(
           itemId: item.id,
           destinationId: dest.id,
           dayIndex,
-          number: i + 1,
+          number: ++number,
           name: dest.name,
           color,
         },

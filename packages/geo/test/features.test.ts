@@ -83,3 +83,23 @@ describe("buildMapFeatures", () => {
     expect(buildMapFeatures(data, new Map([[id(7), stale]]), () => "#000").legs.features).toEqual([]);
   });
 });
+
+describe("buildMapFeatures with activities", () => {
+  it("skips activities and numbers places 1, 2, 3 like the day plan", () => {
+    const withBreakfast = {
+      ...data,
+      days: [
+        {
+          id: id(7),
+          items: [
+            { id: id(9), destinationId: null, activityType: "breakfast", position: 0 },
+            item(4, 1, 1),
+            item(5, 2, 2),
+          ],
+        },
+      ],
+    } as unknown as TripAggregate;
+    const f = buildMapFeatures(withBreakfast, new Map(), () => "#000");
+    expect(f.stops.features.map((s) => s.properties.number)).toEqual([1, 2]);
+  });
+});
