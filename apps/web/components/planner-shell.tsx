@@ -1,35 +1,69 @@
 import { APP_NAME } from "@orbi/core";
 import Link from "next/link";
+import { Settings } from "lucide-react";
 import { ServerStatus } from "./server-status";
+import { ThemeToggle } from "./theme-toggle";
 
-/** Split planner layout: itinerary panel on the left, map on the right (stacked on small screens). */
-export function PlannerShell({ panel, map }: { panel: React.ReactNode; map: React.ReactNode }) {
+const floating =
+  "flex flex-col gap-6 bg-card p-5 *:shrink-0 lg:absolute lg:top-3 lg:bottom-3 lg:z-10 lg:overflow-y-auto lg:rounded-2xl lg:border lg:shadow-lg";
+
+/**
+ * Top bar over a full-screen map with floating panels: the plan on the left and, optionally,
+ * places and AI on the right. On small screens the map comes first and the panels stack below it.
+ */
+export function PlannerShell({
+  panel,
+  side,
+  map,
+  title,
+}: {
+  panel: React.ReactNode;
+  side?: React.ReactNode;
+  map: React.ReactNode;
+  title?: React.ReactNode;
+}) {
   return (
-    <main className="flex min-h-dvh flex-col lg:h-dvh lg:flex-row">
-      <aside className="flex w-full flex-col border-b bg-card lg:w-[440px] lg:shrink-0 lg:border-r lg:border-b-0">
-        <header className="flex items-center justify-between border-b px-6 py-4">
-          <Link href="/trips" className="text-lg font-semibold tracking-tight">
-            {APP_NAME}
-          </Link>
-          <span className="flex items-center gap-3">
+    <div className="flex min-h-dvh flex-col lg:h-dvh">
+      <header className="z-20 flex h-14 shrink-0 items-center gap-3 border-b bg-card px-4">
+        <Link href="/trips" className="text-lg font-bold tracking-tight">
+          {APP_NAME}
+        </Link>
+        {title ? <div className="min-w-0 truncate">{title}</div> : null}
+        <span className="ml-auto flex items-center gap-1">
+          <span className="hidden sm:contents">
             <ServerStatus />
-            <Link href="/settings" className="text-sm text-muted-foreground hover:text-foreground">
-              Settings
-            </Link>
           </span>
-        </header>
-        <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-6 *:shrink-0">{panel}</div>
-      </aside>
-      <section aria-label="Map" className="relative min-h-[50vh] flex-1 bg-muted lg:min-h-0">
-        {map}
-      </section>
-    </main>
+          <ThemeToggle />
+          <Link
+            href="/settings"
+            aria-label="Settings"
+            title="Settings"
+            className="inline-flex size-9 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <Settings aria-hidden className="size-4" />
+          </Link>
+        </span>
+      </header>
+      <main className={`relative flex flex-1 flex-col lg:min-h-0 ${side ? "with-side" : ""}`}>
+        <section aria-label="Map" className="relative h-[50vh] bg-muted lg:absolute lg:inset-0 lg:h-auto">
+          {map}
+        </section>
+        <aside aria-label="Plan" className={`${floating} border-b lg:left-3 lg:w-[400px]`}>
+          {panel}
+        </aside>
+        {side ? (
+          <aside aria-label="Places and AI" className={`${floating} lg:right-3 lg:w-[360px]`}>
+            {side}
+          </aside>
+        ) : null}
+      </main>
+    </div>
   );
 }
 
 export function MapPlaceholder({ label }: { label: string }) {
   return (
-    <div className="flex h-full min-h-[50vh] items-center justify-center text-sm text-muted-foreground">
+    <div className="flex h-full min-h-[50vh] items-center justify-center text-sm text-muted-foreground lg:min-h-0">
       {label}
     </div>
   );

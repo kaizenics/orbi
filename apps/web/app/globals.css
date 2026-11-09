@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "@orbi/theme/theme.css";
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @theme inline {
   --font-sans: var(--font-geist-sans), "Helvetica Neue", sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
@@ -13,5 +15,16 @@
   body {
     @apply bg-background font-sans text-foreground antialiased;
     line-height: 1.6;
+  }
+}
+
+/* Keep map controls clear of the floating side panels on wide screens. */
+@media (min-width: 1024px) {
+  .with-side .maplibregl-ctrl-top-right,
+  .with-side .maplibregl-ctrl-bottom-right {
+    right: 384px;
+  }
+  .maplibregl-ctrl-bottom-left {
+    left: 424px;
   }
 }

@@ -7,6 +7,7 @@ import { dayColor } from "@orbi/theme";
 import { useTripActions } from "@/lib/mutations";
 import { useClientConfig, useDayRoutes, useTrip } from "@/lib/queries";
 import { formatDate } from "@/lib/format";
+import { useTheme } from "@/lib/theme";
 import { AiAssistant } from "./ai-assistant";
 import { DayPlan } from "./day-plan";
 import { IdeasList } from "./ideas-list";
@@ -40,6 +41,7 @@ function TripPlanner({ data }: { data: TripAggregate }) {
   const [dayIndex, setDayIndex] = useState(0);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const config = useClientConfig();
+  const theme = useTheme();
   const routeQueries = useDayRoutes(data);
   const actions = useTripActions(data.trip.id);
   const [preview, setPreview] = useState<{ dayId: string; stop: ProposedStop }[] | null>(null);
@@ -108,9 +110,11 @@ function TripPlanner({ data }: { data: TripAggregate }) {
           actions={actions}
         />
       ) : null}
+    </>
+  );
 
-      <AiAssistant data={data} onPreview={onPreview} />
-
+  const side = (
+    <>
       <PlaceSearch
         tripId={data.trip.id}
         dayId={day?.id}
@@ -125,6 +129,8 @@ function TripPlanner({ data }: { data: TripAggregate }) {
         dayLabel={`Day ${safeIndex + 1}`}
         actions={actions}
       />
+
+      <AiAssistant data={data} onPreview={onPreview} />
     </>
   );
 
@@ -134,7 +140,7 @@ function TripPlanner({ data }: { data: TripAggregate }) {
     <MapPlaceholder label={`Map unavailable: ${config.error.message}`} />
   ) : (
     <TripMap
-      styleUrl={config.data.map.styleUrl}
+      styleUrl={theme === "dark" ? darkStyle(config.data.map.styleUrl) : config.data.map.styleUrl}
       data={mapData}
       routes={routes}
       dayIndex={safeIndex}
@@ -147,8 +153,23 @@ function TripPlanner({ data }: { data: TripAggregate }) {
     />
   );
 
-  return <PlannerShell panel={panel} map={map} />;
+  return (
+    <PlannerShell
+      panel={panel}
+      side={side}
+      map={map}
+      title={
+        <Link href="/trips" className="rounded-full border px-3 py-1 text-sm font-medium hover:bg-muted">
+          ‹ {data.trip.name}
+        </Link>
+      }
+    />
+  );
 }
+
+/** OpenFreeMap ships a dark variant of its default style; other styles stay as configured. */
+const darkStyle = (url: string) =>
+  url.replace(/^(https:\/\/tiles\.openfreemap\.org\/styles\/)liberty$/, "$1dark");
 
 /**
  * Adds AI-proposed (not yet applied) stops to a copy of the trip so the map can preview them.
