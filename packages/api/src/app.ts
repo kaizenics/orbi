@@ -4,9 +4,11 @@ import { cors } from "hono/cors";
 import { requestId } from "hono/request-id";
 import { APP_NAME, type ClientConfig, type HealthResponse } from "@orbi/core";
 import type { Db } from "@orbi/db";
+import type { AiModel } from "@orbi/ai";
 import type { GeoProviders } from "@orbi/geo";
 import { bearerAuth } from "./http/auth.ts";
 import { problem, problemFromError } from "./http/problem.ts";
+import { aiRoutes } from "./routes/ai.ts";
 import { configRoutes, dayRouteRoutes, placeRoutes } from "./routes/geo.ts";
 import { dayRoutes, destinationRoutes, itemRoutes } from "./routes/itinerary.ts";
 import { tripRoutes } from "./routes/trips.ts";
@@ -16,6 +18,8 @@ export interface AppDeps {
   db: Db;
   geo: GeoProviders;
   clientConfig: ClientConfig;
+  /** Optional: without it, AI routes answer 503 and everything else works. */
+  ai?: AiModel | null;
   /** How long geocoding and routing results stay cached (default 30 days). */
   cacheTtlMs?: number;
   /** When set, every route except GET /health requires `Authorization: Bearer <token>`. */
@@ -60,7 +64,17 @@ export function createApp(deps: AppDeps) {
     .route("/destinations", destinationRoutes(deps.db))
     .route("/days", dayRoutes(deps.db))
     .route("/days", dayRouteRoutes(geoDeps))
-    .route("/items", itemRoutes(deps.db));
+    .route("/items", itemRoutes(deps.db))
+    .route(
+      "/",
+      aiRoutes({
+        db: deps.db,
+        ai: deps.ai ?? null,
+        geocoder: deps.geo.geocoder,
+        cacheTtlMs: geoDeps.cacheTtlMs,
+        log: deps.log,
+      }),
+    );
 }
 
 export type AppType = ReturnType<typeof createApp>;

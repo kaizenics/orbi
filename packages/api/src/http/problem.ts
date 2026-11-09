@@ -20,6 +20,7 @@ const STATUS: Record<OrbiErrorCode, ContentfulStatusCode> = {
   validation: 422,
   rate_limited: 429,
   provider_unavailable: 503,
+  ai_output_invalid: 502,
 };
 
 const TITLES: Record<Problem["code"], string> = {
@@ -29,6 +30,7 @@ const TITLES: Record<Problem["code"], string> = {
   validation: "Invalid request",
   rate_limited: "Too many requests",
   provider_unavailable: "Service unavailable",
+  ai_output_invalid: "AI returned an unusable answer",
   bad_request: "Bad request",
   unauthorized: "Unauthorized",
   internal: "Internal server error",

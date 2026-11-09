@@ -8,6 +8,7 @@ export const clientConfig: ClientConfig = {
   travelModes: ["driving", "walking"],
   routingProvider: "osrm",
   geocoder: { provider: "nominatim", typeahead: false },
+  ai: { available: false, provider: null, model: null },
 };
 
 /** Counting fakes: a geocoder with one fixed result and a router that bends each leg (not a straight line). */
@@ -26,9 +27,9 @@ export function fakeGeo(options: { failRouting?: boolean; modes?: TravelMode[] }
   const geo: GeoProviders = {
     geocoder: {
       name: "nominatim",
-      async search() {
+      async search(query: string) {
         calls.search++;
-        return [candidate];
+        return query.includes("Nowhere") ? [] : [candidate];
       },
       async reverse() {
         calls.reverse++;

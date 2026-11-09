@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@hono/zod-validator": "0.9.1",
+    "@orbi/ai": "workspace:*",
     "@orbi/core": "workspace:*",
     "@orbi/db": "workspace:*",
     "@orbi/geo": "workspace:*",
@@ -26,6 +27,7 @@
     "@orbi/eslint-config": "workspace:*",
     "@orbi/typescript-config": "workspace:*",
     "@types/node": "catalog:",
+    "ai": "7.0.166",
     "eslint": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
