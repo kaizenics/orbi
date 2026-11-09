@@ -21,6 +21,7 @@
 
 /* Keep map controls clear of the floating side panels on wide screens. */
 @media (min-width: 1024px) {
+  .with-side .map-style-toggle,
   .with-side .maplibregl-ctrl-top-right,
   .with-side .maplibregl-ctrl-bottom-right {
     right: 384px;

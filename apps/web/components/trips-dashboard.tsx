@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CalendarDays, Clock, Copy, Loader2, MapPin, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { CalendarDays, Clock, Copy, Loader2, MapPin, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import type { TripSummary } from "@orbi/core";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,8 @@ import { useDeleteTrip, useDuplicateTrip } from "@/lib/mutations";
 import { useTrips } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 import { useConfirm } from "./confirm-dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { MAX_TIMEZONES, setPreference, usePreferences } from "@/lib/preferences";
 import { NewTripDialog } from "./new-trip-form";
 import { PanelMessage } from "./planner-shell";
 
@@ -286,67 +288,154 @@ function TripCard({ trip, now }: { trip: TripSummary; now: string }) {
 function SideCard({
   icon,
   title,
+  action,
   children,
 }: {
   icon: React.ReactNode;
   title: string;
+  action?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <section aria-label={title} className="rounded-3xl border bg-card p-5">
-      <h2 className="mb-4 flex items-center gap-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase [&_svg]:size-4">
-        {icon}
-        {title}
-      </h2>
+      <div className="mb-4 flex items-center justify-between gap-2">
+        <h2 className="flex items-center gap-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase [&_svg]:size-4">
+          {icon}
+          {title}
+        </h2>
+        {action}
+      </div>
       {children}
     </section>
   );
 }
 
-/** Live clocks: where you are, plus the time zones of upcoming trips. */
+/** Live clocks. Automatic (you + upcoming trips) until the user adds or removes one; at most 5. */
 function TimezonesCard({ trips }: { trips: TripSummary[] }) {
+  const prefs = usePreferences();
   const [now, setNow] = useState<Date | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [search, setSearch] = useState("");
   useEffect(() => {
     setNow(new Date());
     const id = setInterval(() => setNow(new Date()), 30_000);
     return () => clearInterval(id);
   }, []);
   const local = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const zones = [...new Set([local, ...trips.map((t) => t.timezone)])].slice(0, 5);
+  const zones =
+    prefs.timezones ?? [...new Set([local, ...trips.map((t) => t.timezone)])].slice(0, MAX_TIMEZONES);
+  const full = zones.length >= MAX_TIMEZONES;
+  const cityOf = (zone: string) => zone.split("/").at(-1)!.replace(/_/g, " ");
+  const q = search.trim().toLowerCase().replace(/\s+/g, "_");
+  const matches = adding
+    ? Intl.supportedValuesOf("timeZone")
+        .filter((z) => !zones.includes(z) && (!q || z.toLowerCase().includes(q)))
+        .slice(0, 50)
+    : [];
 
   return (
-    <SideCard icon={<Clock aria-hidden />} title="Timezones">
-      <ul className="flex flex-col gap-4">
-        {zones.map((zone) => {
-          const city = zone.split("/").at(-1)!.replace(/_/g, " ");
-          const offset = now
-            ? new Intl.DateTimeFormat("en", { timeZone: zone, timeZoneName: "shortOffset" })
-                .formatToParts(now)
-                .find((p) => p.type === "timeZoneName")?.value
-            : "";
-          return (
-            <li key={zone} className="flex items-center gap-3">
-              <span className="inline-flex size-8 items-center justify-center rounded-full bg-muted text-xs font-semibold">
-                {city[0]}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate font-semibold">
-                  {city}
-                  {zone === local ? (
-                    <span className="ml-1.5 text-xs font-normal text-muted-foreground">You</span>
-                  ) : null}
+    <SideCard
+      icon={<Clock aria-hidden />}
+      title="Timezones"
+      action={
+        <Popover open={adding} onOpenChange={(o) => (setAdding(o), setSearch(""))}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7 text-muted-foreground"
+              aria-label="Add a timezone"
+              title={full ? `Up to ${MAX_TIMEZONES} timezones` : "Add a timezone"}
+              disabled={full}
+            >
+              <Plus aria-hidden />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-72 p-2">
+            <Input
+              autoFocus
+              aria-label="Search timezones"
+              placeholder="Search a city, e.g. Tokyo"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <ul className="mt-2 max-h-64 overflow-y-auto" aria-label="Timezones">
+              {matches.map((zone) => (
+                <li key={zone}>
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted"
+                    onClick={() => {
+                      setPreference("timezones", [...zones, zone]);
+                      setAdding(false);
+                    }}
+                  >
+                    <span className="truncate">{cityOf(zone)}</span>
+                    <span className="truncate text-xs text-muted-foreground">{zone}</span>
+                  </button>
+                </li>
+              ))}
+              {matches.length === 0 ? (
+                <li className="px-2 py-1.5 text-sm text-muted-foreground">No match</li>
+              ) : null}
+            </ul>
+          </PopoverContent>
+        </Popover>
+      }
+    >
+      {zones.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No clocks. Add a timezone with +.</p>
+      ) : (
+        <ul className="flex flex-col gap-4">
+          {zones.map((zone) => {
+            const city = cityOf(zone);
+            const offset = now
+              ? new Intl.DateTimeFormat("en", { timeZone: zone, timeZoneName: "shortOffset" })
+                  .formatToParts(now)
+                  .find((p) => p.type === "timeZoneName")?.value
+              : "";
+            return (
+              <li key={zone} className="group flex items-center gap-3">
+                <span className="inline-flex size-8 items-center justify-center rounded-full bg-muted text-xs font-semibold">
+                  {city[0]}
                 </span>
-                <span className="text-xs text-muted-foreground">{offset}</span>
-              </span>
-              <span className="text-xl font-bold tabular-nums">
-                {now
-                  ? now.toLocaleTimeString("en-GB", { timeZone: zone, hour: "2-digit", minute: "2-digit" })
-                  : "--:--"}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-semibold">
+                    {city}
+                    {zone === local ? (
+                      <span className="ml-1.5 text-xs font-normal text-muted-foreground">You</span>
+                    ) : null}
+                  </span>
+                  <span className="text-xs text-muted-foreground">{offset}</span>
+                </span>
+                <span className="text-xl font-bold tabular-nums">
+                  {now
+                    ? now.toLocaleTimeString(prefs.timeFormat === "12h" ? "en-US" : "en-GB", {
+                        timeZone: zone,
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "--:--"}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-7 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                  aria-label={`Remove ${city}`}
+                  onClick={() =>
+                    setPreference(
+                      "timezones",
+                      zones.filter((z) => z !== zone),
+                    )
+                  }
+                >
+                  <X aria-hidden />
+                </Button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </SideCard>
   );
 }

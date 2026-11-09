@@ -124,15 +124,19 @@ export function GeneralSettings() {
 export function MapSettings() {
   const prefs = usePreferences();
   return (
-    <SettingRow label="Map colours" description="Follow the app's light or dark mode, or keep one map style.">
+    <SettingRow
+      label="Map style"
+      description="Follow the app's light or dark mode, keep one style, or show satellite imagery."
+    >
       <Segmented<Preferences["mapStyle"]>
-        label="Map colours"
+        label="Map style"
         value={prefs.mapStyle}
         onChange={(v) => setPreference("mapStyle", v)}
         options={[
           { value: "auto", label: "Match app" },
           { value: "light", label: "Light" },
           { value: "dark", label: "Dark" },
+          { value: "satellite", label: "Satellite" },
         ]}
       />
     </SettingRow>

@@ -10,13 +10,16 @@ import {
   type MapLayerMouseEvent,
   type MapRef,
 } from "@vis.gl/react-maplibre";
-import { setWorkerUrl, type ExpressionSpecification } from "maplibre-gl";
+import { setWorkerUrl, type ExpressionSpecification, type StyleSpecification } from "maplibre-gl";
+import { Layers } from "lucide-react";
 import type { DayRoute, TripAggregate } from "@orbi/core";
 import { bboxOf, buildMapFeatures, formatRouteTotals } from "@orbi/geo/utils";
 import { dayColor } from "@orbi/theme";
 
 interface TripMapProps {
-  styleUrl: string;
+  styleUrl: string | StyleSpecification;
+  satellite: boolean;
+  onToggleSatellite: () => void;
   data: TripAggregate;
   routes: ReadonlyMap<string, DayRoute>;
   dayIndex: number;
@@ -39,6 +42,8 @@ if (typeof window !== "undefined") setWorkerUrl("/vendor/maplibre-gl-worker.mjs"
 
 export function TripMap({
   styleUrl,
+  satellite,
+  onToggleSatellite,
   data,
   routes,
   dayIndex,
@@ -238,6 +243,16 @@ export function TripMap({
           )}
         </div>
       ) : null}
+      <button
+        type="button"
+        onClick={onToggleSatellite}
+        aria-pressed={satellite}
+        title={satellite ? "Show the map" : "Show satellite imagery"}
+        className="map-style-toggle absolute top-[88px] right-2.5 z-10 inline-flex items-center gap-1.5 rounded-md border bg-card px-2.5 py-1.5 text-xs font-medium shadow-sm hover:bg-muted"
+      >
+        <Layers aria-hidden className="size-3.5" />
+        {satellite ? "Map" : "Satellite"}
+      </button>
     </div>
   );
 }

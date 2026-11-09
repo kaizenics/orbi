@@ -9,10 +9,29 @@ export interface Preferences {
   timeFormat: "24h" | "12h";
   distanceUnit: "metric" | "imperial";
   /** Map colours: follow the app theme, or always light / always dark. */
-  mapStyle: "auto" | "light" | "dark";
+  mapStyle: "auto" | "light" | "dark" | "satellite";
+  /** Clocks on My Trips (IANA names); null = automatic (you + upcoming trips). */
+  timezones: string[] | null;
 }
 
-const DEFAULTS: Preferences = { timeFormat: "24h", distanceUnit: "metric", mapStyle: "auto" };
+export const MAX_TIMEZONES = 5;
+
+const isTimeZone = (zone: unknown): zone is string => {
+  if (typeof zone !== "string") return false;
+  try {
+    new Intl.DateTimeFormat("en", { timeZone: zone });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const DEFAULTS: Preferences = {
+  timeFormat: "24h",
+  distanceUnit: "metric",
+  mapStyle: "auto",
+  timezones: null,
+};
 const STORAGE_KEY = "orbi.preferences";
 const listeners = new Set<() => void>();
 let cachedRaw: string | null | undefined;
@@ -33,7 +52,10 @@ function read(): Preferences {
       cached = {
         timeFormat: saved.timeFormat === "12h" ? "12h" : "24h",
         distanceUnit: saved.distanceUnit === "imperial" ? "imperial" : "metric",
-        mapStyle: saved.mapStyle === "light" || saved.mapStyle === "dark" ? saved.mapStyle : "auto",
+        mapStyle: (["light", "dark", "satellite"] as const).find((m) => m === saved.mapStyle) ?? "auto",
+        timezones: Array.isArray(saved.timezones)
+          ? [...new Set(saved.timezones.filter(isTimeZone))].slice(0, MAX_TIMEZONES)
+          : null,
       };
     } catch {
       cached = DEFAULTS;

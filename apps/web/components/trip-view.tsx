@@ -7,7 +7,8 @@ import { dayColor } from "@orbi/theme";
 import { useTripActions } from "@/lib/mutations";
 import { useClientConfig, useDayRoutes, useTrip } from "@/lib/queries";
 import { formatDate } from "@/lib/format";
-import { usePreferences } from "@/lib/preferences";
+import { SATELLITE_STYLE } from "@/lib/map-styles";
+import { setPreference, usePreferences } from "@/lib/preferences";
 import { useTheme } from "@/lib/theme";
 import { AiAssistant } from "./ai-assistant";
 import { DayPlan } from "./day-plan";
@@ -146,7 +147,15 @@ function TripPlanner({ data }: { data: TripAggregate }) {
     <MapPlaceholder label={`Map unavailable: ${config.error.message}`} />
   ) : (
     <TripMap
-      styleUrl={darkMap ? darkStyle(config.data.map.styleUrl) : config.data.map.styleUrl}
+      styleUrl={
+        mapStyle === "satellite"
+          ? SATELLITE_STYLE
+          : darkMap
+            ? darkStyle(config.data.map.styleUrl)
+            : config.data.map.styleUrl
+      }
+      satellite={mapStyle === "satellite"}
+      onToggleSatellite={() => setPreference("mapStyle", mapStyle === "satellite" ? "auto" : "satellite")}
       data={mapData}
       routes={routes}
       dayIndex={safeIndex}
