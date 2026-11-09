@@ -1,15 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDown, ArrowLeft, Car, Clock, ExternalLink, Footprints } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { DayRoute, Destination, RouteLeg, TravelMode, TripAggregate } from "@orbi/core";
-import { buildNavigationLinks, formatDistance, formatDuration, formatRouteTotals } from "@orbi/geo/utils";
+import { summarizeCosts, type DayRoute, type ProposedStop, type TripAggregate } from "@orbi/core";
 import { dayColor } from "@orbi/theme";
+import { useTripActions } from "@/lib/mutations";
 import { useClientConfig, useDayRoutes, useTrip } from "@/lib/queries";
-import { formatDate, formatDateRange, formatMinutes, formatMoney } from "@/lib/format";
+import { formatDate } from "@/lib/format";
+import { AiAssistant } from "./ai-assistant";
+import { DayPlan } from "./day-plan";
+import { IdeasList } from "./ideas-list";
 import { MapPlaceholder, PanelMessage, PlannerShell } from "./planner-shell";
 import { PlaceSearch } from "./place-search";
+import { TripHeader } from "./trip-header";
 import { TripMap } from "./trip-map";
 
 export function TripView({ tripId }: { tripId: string }) {
@@ -38,60 +41,37 @@ function TripPlanner({ data }: { data: TripAggregate }) {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const config = useClientConfig();
   const routeQueries = useDayRoutes(data);
-  const cardRefs = useRef(new Map<string, HTMLElement>());
+  const actions = useTripActions(data.trip.id);
+  const [preview, setPreview] = useState<{ dayId: string; stop: ProposedStop }[] | null>(null);
+  const onPreview = useCallback((p: { dayId: string; stop: ProposedStop }[] | null) => setPreview(p), []);
+  const mapData = useMemo(() => withPreview(data, preview), [data, preview]);
 
   const routes = useMemo(() => {
     const map = new Map<string, DayRoute>();
     for (const r of routeQueries) if (r.query.data) map.set(r.dayId, r.query.data);
     return map;
   }, [routeQueries]);
-
   const byId = useMemo(() => new Map(data.destinations.map((d) => [d.id, d])), [data.destinations]);
-  const scheduled = useMemo(
-    () => new Set(data.days.flatMap((d) => d.items.map((i) => i.destinationId))),
-    [data.days],
-  );
-  const existingRefs = useMemo(
-    () => new Set(data.destinations.flatMap((d) => (d.sourceRef ? [d.sourceRef] : []))),
-    [data.destinations],
-  );
-  const ideas = data.destinations.filter((d) => !scheduled.has(d.id));
-  const day = data.days[dayIndex] ?? data.days[0];
-  const dayRoute = day ? routes.get(day.id) : undefined;
-  const dayMode: TravelMode = day?.travelMode ?? data.trip.defaultTravelMode;
-  const { trip } = data;
+  const costs = useMemo(() => summarizeCosts(data), [data]);
+  const scheduled = new Set(data.days.flatMap((d) => d.items.map((i) => i.destinationId)));
+  const existingRefs = new Set(data.destinations.flatMap((d) => (d.sourceRef ? [d.sourceRef] : [])));
 
+  const safeIndex = Math.min(dayIndex, data.days.length - 1);
+  const day = data.days[safeIndex];
   const firstStop = day?.items[0] ? byId.get(day.items[0].destinationId) : data.destinations[0];
   const near = firstStop ? { lat: firstStop.latitude, lng: firstStop.longitude } : undefined;
 
   useEffect(() => {
-    if (selectedItemId)
-      cardRefs.current.get(selectedItemId)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    if (selectedItemId) {
+      document
+        .querySelector(`[data-item-id="${selectedItemId}"]`)
+        ?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
   }, [selectedItemId]);
-
-  const legAfter = (itemId: string): RouteLeg | undefined =>
-    dayRoute?.legs.find((l) => l.fromItemId === itemId);
 
   const panel = (
     <>
-      <div className="flex flex-col gap-2">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft aria-hidden className="size-4" /> Trips
-        </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">{trip.name}</h1>
-        <p className="text-sm text-muted-foreground">
-          {[
-            trip.regionName,
-            formatDateRange(trip.startDate, trip.endDate),
-            trip.budgetMinor !== null ? `Budget ${formatMoney(trip.budgetMinor, trip.currency)}` : null,
-          ]
-            .filter(Boolean)
-            .join(" · ")}
-        </p>
-      </div>
+      <TripHeader data={data} costs={costs} actions={actions} />
 
       <div role="tablist" aria-label="Trip days" className="flex gap-2 overflow-x-auto pb-1">
         {data.days.map((d, i) => (
@@ -99,7 +79,7 @@ function TripPlanner({ data }: { data: TripAggregate }) {
             key={d.id}
             role="tab"
             type="button"
-            aria-selected={i === dayIndex}
+            aria-selected={i === safeIndex}
             onClick={() => {
               setDayIndex(i);
               setSelectedItemId(null);
@@ -114,78 +94,37 @@ function TripPlanner({ data }: { data: TripAggregate }) {
       </div>
 
       {day ? (
-        <section role="tabpanel" aria-label={`Day ${dayIndex + 1}`} className="flex flex-col gap-3">
-          <header className="flex items-baseline justify-between gap-2">
-            <h2 className="font-medium">{day.title ?? `Day ${dayIndex + 1}`}</h2>
-            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-              {dayMode === "walking" ? (
-                <Footprints aria-hidden className="size-3.5" />
-              ) : (
-                <Car aria-hidden className="size-3.5" />
-              )}
-              {dayMode}
-              {dayRoute ? ` · ${formatRouteTotals(dayRoute.totals) ?? "no road route"}` : null}
-            </span>
-          </header>
-          {day.items.length === 0 ? (
-            <PanelMessage title="No stops on this day yet">Search for a place below to add one.</PanelMessage>
-          ) : (
-            <ol className="flex flex-col">
-              {day.items.map((item, i) => {
-                const dest = byId.get(item.destinationId);
-                if (!dest) return null;
-                const leg = i < day.items.length - 1 ? legAfter(item.id) : undefined;
-                return (
-                  <li
-                    key={item.id}
-                    ref={(el) => {
-                      if (el) cardRefs.current.set(item.id, el);
-                      else cardRefs.current.delete(item.id);
-                    }}
-                  >
-                    <StopCard
-                      number={i + 1}
-                      color={dayColor(dayIndex)}
-                      destination={dest}
-                      mode={dayMode}
-                      durationMin={item.durationOverrideMin ?? dest.visitDurationMin}
-                      selected={selectedItemId === item.id}
-                      onSelect={() => setSelectedItemId(item.id)}
-                    />
-                    {i < day.items.length - 1 ? <LegRow leg={leg} /> : null}
-                  </li>
-                );
-              })}
-            </ol>
-          )}
-        </section>
+        <DayPlan
+          key={day.id}
+          data={data}
+          day={day}
+          dayIndex={safeIndex}
+          color={dayColor(safeIndex)}
+          route={routes.get(day.id)}
+          byId={byId}
+          dayCostMinor={costs.perDayMinor[safeIndex] ?? 0}
+          selectedItemId={selectedItemId}
+          onSelectItem={setSelectedItemId}
+          actions={actions}
+        />
       ) : null}
 
+      {config.data ? <AiAssistant data={data} ai={config.data.ai} onPreview={onPreview} /> : null}
+
       <PlaceSearch
-        tripId={trip.id}
+        tripId={data.trip.id}
         dayId={day?.id}
-        dayLabel={`Day ${dayIndex + 1}`}
+        dayLabel={`Day ${safeIndex + 1}`}
         near={near}
         existingRefs={existingRefs}
       />
 
-      {ideas.length ? (
-        <section aria-labelledby="ideas-heading" className="flex flex-col gap-2">
-          <h2
-            id="ideas-heading"
-            className="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-          >
-            Ideas · not scheduled
-          </h2>
-          <ul className="flex flex-col gap-1 text-sm">
-            {ideas.map((d) => (
-              <li key={d.id} className="rounded-md border px-3 py-2">
-                {d.name}
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+      <IdeasList
+        ideas={data.destinations.filter((d) => !scheduled.has(d.id))}
+        dayId={day?.id}
+        dayLabel={`Day ${safeIndex + 1}`}
+        actions={actions}
+      />
     </>
   );
 
@@ -196,87 +135,74 @@ function TripPlanner({ data }: { data: TripAggregate }) {
   ) : (
     <TripMap
       styleUrl={config.data.map.styleUrl}
-      data={data}
+      data={mapData}
       routes={routes}
-      dayIndex={dayIndex}
+      dayIndex={safeIndex}
       selectedItemId={selectedItemId}
       onSelectItem={(itemId, i) => {
         setDayIndex(i);
         setSelectedItemId(itemId);
       }}
-      routeLoading={routeQueries[dayIndex]?.query.isFetching ?? false}
+      routeLoading={routeQueries[safeIndex]?.query.isFetching ?? false}
     />
   );
 
   return <PlannerShell panel={panel} map={map} />;
 }
 
-function LegRow({ leg }: { leg: RouteLeg | undefined }) {
-  return (
-    <div className="flex items-center gap-2 py-1.5 pl-5 text-xs text-muted-foreground">
-      <ArrowDown aria-hidden className="size-3.5" />
-      {!leg ? (
-        <span>…</span>
-      ) : leg.status === "routed" ? (
-        <span>
-          {formatDuration(leg.durationS)} · {formatDistance(leg.distanceM)}{" "}
-          {leg.mode === "walking" ? "walk" : "drive"}
-        </span>
-      ) : (
-        <span title={leg.reason}>
-          {formatDistance(leg.straightLineM)} straight line · no road route available
-        </span>
-      )}
-    </div>
-  );
-}
-
-function StopCard(props: {
-  number: number;
-  color: string;
-  destination: Destination;
-  mode: TravelMode;
-  durationMin: number;
-  selected: boolean;
-  onSelect: () => void;
-}) {
-  const { destination: d } = props;
-  const nav = buildNavigationLinks({ lat: d.latitude, lng: d.longitude, name: d.name }, props.mode);
-  return (
-    <div
-      className={`flex items-start gap-3 rounded-lg border p-3 transition-colors ${props.selected ? "border-foreground bg-muted" : "hover:bg-muted"}`}
-    >
-      <button
-        type="button"
-        onClick={props.onSelect}
-        aria-pressed={props.selected}
-        className="flex min-w-0 flex-1 items-start gap-3 text-left focus-visible:outline-none"
-      >
-        <span
-          aria-label={`Stop ${props.number}`}
-          className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
-          style={{ backgroundColor: props.color }}
-        >
-          {props.number}
-        </span>
-        <span className="flex min-w-0 flex-col gap-0.5">
-          <span className="font-medium">{d.name}</span>
-          {d.address ? <span className="truncate text-xs text-muted-foreground">{d.address}</span> : null}
-          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-            <Clock aria-hidden className="size-3" />
-            {formatMinutes(props.durationMin)} · {d.category}
-          </span>
-        </span>
-      </button>
-      <a
-        href={nav.google}
-        target="_blank"
-        rel="noreferrer"
-        aria-label={`Open ${d.name} in Google Maps`}
-        className="rounded-md p-1 text-muted-foreground hover:text-foreground"
-      >
-        <ExternalLink aria-hidden className="size-4" />
-      </a>
-    </div>
-  );
+/**
+ * Adds AI-proposed (not yet applied) stops to a copy of the trip so the map can preview them.
+ * Preview stops have no routes; they appear as numbered markers after the day's real stops.
+ */
+function withPreview(
+  data: TripAggregate,
+  preview: { dayId: string; stop: ProposedStop }[] | null,
+): TripAggregate {
+  if (!preview?.length) return data;
+  const destinations = [...data.destinations];
+  const days = data.days.map((day) => {
+    const extra = preview.filter((p) => p.dayId === day.id && p.stop.location);
+    return {
+      ...day,
+      items: [
+        ...day.items,
+        ...extra.map(({ stop }, i) => {
+          const id = `preview-${stop.key}`;
+          destinations.push({
+            id,
+            tripId: data.trip.id,
+            name: stop.name,
+            description: stop.why,
+            address: stop.location!.address,
+            latitude: stop.location!.latitude,
+            longitude: stop.location!.longitude,
+            category: stop.category,
+            visitDurationMin: stop.visitDurationMin,
+            openingHours: null,
+            openingHoursSource: null,
+            estCostMinor: stop.estCostMinor,
+            costSource: stop.estCostMinor === null ? null : "ai_estimate",
+            notes: null,
+            locationSource: stop.location!.source,
+            sourceRef: stop.location!.sourceRef,
+            locationVerifiedAt: 0,
+            origin: "ai",
+            createdAt: 0,
+            updatedAt: 0,
+          });
+          return {
+            id,
+            tripDayId: day.id,
+            destinationId: id,
+            position: day.items.length + i,
+            fixedStartTime: null,
+            durationOverrideMin: null,
+            travelModeToNext: null,
+            notes: null,
+          };
+        }),
+      ],
+    };
+  });
+  return { ...data, days, destinations };
 }

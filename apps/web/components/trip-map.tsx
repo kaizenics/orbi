@@ -29,7 +29,7 @@ const LABEL_FONT = ["Noto Sans Bold"];
 /** Extra bottom padding keeps stops clear of the route summary card. */
 const FIT_PADDING = { top: 64, right: 64, bottom: 160, left: 64 };
 
-// See app/vendor/maplibre-gl-worker.mjs/route.ts.
+// Copied to public/vendor by scripts/copy-maplibre-worker.mjs (MapLibre 6 cannot find it once bundled).
 if (typeof window !== "undefined") setWorkerUrl("/vendor/maplibre-gl-worker.mjs");
 
 export function TripMap({
@@ -199,7 +199,9 @@ export function TripMap({
             />
             Day {dayIndex + 1}
           </span>
-          {day.items.length < 2 ? (
+          {day.items.some((i) => i.id.startsWith("preview-")) ? (
+            <span className="text-muted-foreground">AI preview · routes are calculated after you apply.</span>
+          ) : day.items.length < 2 ? (
             <span className="text-muted-foreground">Add two or more stops to see a route.</span>
           ) : routeLoading && !route ? (
             <span className="text-muted-foreground">Calculating route…</span>

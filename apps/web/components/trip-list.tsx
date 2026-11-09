@@ -4,6 +4,7 @@ import Link from "next/link";
 import { CalendarDays, MapPin } from "lucide-react";
 import { useTrips } from "@/lib/queries";
 import { formatDateRange } from "@/lib/format";
+import { NewTripForm } from "./new-trip-form";
 import { PanelMessage } from "./planner-shell";
 
 export function TripList() {
@@ -22,9 +23,13 @@ export function TripList() {
   }
   if (trips.data.length === 0) {
     return (
-      <PanelMessage title="No trips yet">
-        Create one from the API, or load the demo trip with <code className="font-mono">pnpm db:seed</code>.
-      </PanelMessage>
+      <div className="flex flex-col gap-4">
+        <PanelMessage title="No trips yet">
+          Create one, or load the demo trip with{" "}
+          <code className="font-mono">pnpm --filter @orbi/server db:seed</code>.
+        </PanelMessage>
+        <NewTripForm />
+      </div>
     );
   }
 
@@ -33,6 +38,7 @@ export function TripList() {
       <h1 id="trips-heading" className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
         Trips
       </h1>
+      <NewTripForm />
       <ul className="flex flex-col gap-2">
         {trips.data.map((trip) => (
           <li key={trip.id}>
