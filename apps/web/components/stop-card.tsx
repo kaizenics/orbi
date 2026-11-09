@@ -64,79 +64,81 @@ export function StopCard(props: StopCardProps) {
   return (
     <div
       className={cn(
-        "group relative rounded-xl border bg-card transition-colors",
+        "rounded-xl border bg-card transition-colors",
         props.selected && "border-primary/60 bg-accent/40",
       )}
     >
-      <button
-        type="button"
-        onClick={props.onSelect}
-        aria-pressed={props.selected}
-        className="flex w-full flex-col gap-1.5 p-3 text-left focus-visible:outline-none"
-      >
-        <span className="flex items-start justify-between gap-3">
-          <span className="font-semibold">{d.name}</span>
-          <span className="shrink-0 text-sm font-semibold tabular-nums">
-            {s?.arrival != null ? clock(s.arrival) : "–"}
+      <div className="flex">
+        <button
+          type="button"
+          onClick={props.onSelect}
+          aria-pressed={props.selected}
+          className="flex min-w-0 flex-1 flex-col gap-1.5 p-3 text-left focus-visible:outline-none"
+        >
+          <span className="flex items-start justify-between gap-3">
+            <span className="font-semibold">{d.name}</span>
+            <span className="shrink-0 text-sm font-semibold tabular-nums">
+              {s?.arrival != null ? clock(s.arrival) : "–"}
+            </span>
           </span>
-        </span>
-        <span className="flex flex-wrap gap-1.5 pr-24">
-          <Chip>
-            STAY <b>{formatMinutes(duration)}</b>
-          </Chip>
-          {item.fixedStartTime ? (
+          <span className="flex flex-wrap gap-1.5">
             <Chip>
-              FIXED <b>{item.fixedStartTime}</b>
+              STAY <b>{formatMinutes(duration)}</b>
             </Chip>
-          ) : null}
-          {d.estCostMinor !== null ? (
-            <Chip>
-              <b>{formatMoney(d.estCostMinor, props.currency)}</b>
-              {d.costSource === "ai_estimate" ? "est." : ""}
-            </Chip>
-          ) : null}
-          {props.lateMin ? (
-            <Chip tone="warn">
-              <AlertTriangle aria-hidden className="size-3" /> +{formatMinutes(props.lateMin)}
-            </Chip>
-          ) : null}
-        </span>
-        {d.address ? <span className="truncate text-xs text-muted-foreground">{d.address}</span> : null}
-        {item.notes ? <span className="text-xs">{item.notes}</span> : null}
-      </button>
-      {/* Shown on hover, keyboard focus, or when the stop is selected. */}
-      <div
-        className={cn(
-          "absolute right-1.5 bottom-1.5 flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100",
-          (props.selected || editing) && "opacity-100",
-        )}
-      >
-        <Button
-          variant="ghost"
-          size="icon"
-          type="button"
-          aria-label={`Edit ${d.name}`}
-          aria-expanded={editing}
-          onClick={() => setEditing((v) => !v)}
-          className="size-7 text-muted-foreground"
-        >
-          <Pencil aria-hidden className="size-3.5" />
-        </Button>
-        <Button variant="ghost" size="icon" asChild className="size-7 text-muted-foreground">
-          <a href={nav.google} target="_blank" rel="noreferrer" aria-label={`Open ${d.name} in Google Maps`}>
-            <ExternalLink aria-hidden className="size-3.5" />
-          </a>
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          type="button"
-          aria-label={`Remove ${d.name} from this day`}
-          onClick={() => actions.removeItem.mutate(item.id)}
-          className="size-7 text-muted-foreground hover:text-destructive"
-        >
-          <X aria-hidden className="size-3.5" />
-        </Button>
+            {item.fixedStartTime ? (
+              <Chip>
+                FIXED <b>{item.fixedStartTime}</b>
+              </Chip>
+            ) : null}
+            {d.estCostMinor !== null ? (
+              <Chip>
+                <b>{formatMoney(d.estCostMinor, props.currency)}</b>
+                {d.costSource === "ai_estimate" ? "est." : ""}
+              </Chip>
+            ) : null}
+            {props.lateMin ? (
+              <Chip tone="warn">
+                <AlertTriangle aria-hidden className="size-3" /> +{formatMinutes(props.lateMin)}
+              </Chip>
+            ) : null}
+          </span>
+          {d.address ? <span className="truncate text-xs text-muted-foreground">{d.address}</span> : null}
+          {item.notes ? <span className="text-xs">{item.notes}</span> : null}
+        </button>
+        {/* Own column, so long names and addresses can never run under the buttons. */}
+        <div className="flex shrink-0 flex-col justify-center gap-0.5 border-l px-1 py-1.5">
+          <Button
+            variant="ghost"
+            size="icon"
+            type="button"
+            aria-label={`Edit ${d.name}`}
+            aria-expanded={editing}
+            onClick={() => setEditing((v) => !v)}
+            className="size-7 text-muted-foreground"
+          >
+            <Pencil aria-hidden className="size-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" asChild className="size-7 text-muted-foreground">
+            <a
+              href={nav.google}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`Open ${d.name} in Google Maps`}
+            >
+              <ExternalLink aria-hidden className="size-3.5" />
+            </a>
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            type="button"
+            aria-label={`Remove ${d.name} from this day`}
+            onClick={() => actions.removeItem.mutate(item.id)}
+            className="size-7 text-muted-foreground hover:text-destructive"
+          >
+            <X aria-hidden className="size-3.5" />
+          </Button>
+        </div>
       </div>
 
       {editing ? (
