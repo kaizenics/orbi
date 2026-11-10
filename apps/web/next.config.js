@@ -8,6 +8,17 @@ const nextConfig = {
   devIndicators: { position: "bottom-left" },
   // libSQL ships a native binary; load it from node_modules instead of bundling it.
   serverExternalPackages: ["@libsql/client", "libsql"],
+  async headers() {
+    return [
+      {
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+          { key: "Service-Worker-Allowed", value: "/" },
+        ],
+      },
+    ];
+  },
   experimental: {
     // The /api proxy (proxy.ts) defaults to a 30 s timeout; AI drafts can take a minute or two.
     proxyTimeout: 180_000,

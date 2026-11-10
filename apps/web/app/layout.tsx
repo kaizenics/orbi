@@ -3,6 +3,7 @@ import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import localFont from "next/font/local";
 import { APP_NAME, APP_TAGLINE } from "@orbi/core";
 import { themeInitScript } from "@/lib/theme";
+import { currentEmail } from "@/lib/session";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -17,7 +18,8 @@ export const metadata: Metadata = {
   description: APP_TAGLINE,
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const email = await currentEmail();
   return (
     // suppressHydrationWarning: the theme script sets data-theme before React hydrates.
     <html lang="en" suppressHydrationWarning>
@@ -25,7 +27,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className={`${sans.variable} ${heading.variable} ${geistMono.variable}`}>
-        <Providers>{children}</Providers>
+        <Providers cacheKey={email ?? "signed-out"}>{children}</Providers>
       </body>
     </html>
   );
