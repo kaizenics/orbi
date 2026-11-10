@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { APP_NAME, APP_TAGLINE } from "@orbi/core";
 import { authConfig, currentEmail, safeNextPath } from "@/lib/session";
+import { Logo } from "@/components/logo";
 
 const ERRORS: Record<string, string> = {
   cancelled: "Sign-in was cancelled.",
@@ -23,7 +24,7 @@ export default async function LoginPage({
       <div className="flex w-full max-w-sm flex-col gap-5 rounded-lg border bg-card p-6">
         <div>
           <Link href="/" className="text-2xl font-semibold tracking-tight">
-            {APP_NAME}
+            <Logo />
           </Link>
           <p className="text-sm text-muted-foreground">{APP_TAGLINE}</p>
         </div>

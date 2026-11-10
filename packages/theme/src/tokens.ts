@@ -8,7 +8,7 @@ export const colors = {
   ink: "#111111",
   inkMuted: "#6B6A66",
   border: "#EAEAEA",
-  accent: "#1F6C9F",
+  accent: "#111111",
 } as const;
 
 /**

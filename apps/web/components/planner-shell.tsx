@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ThemeToggle } from "./theme-toggle";
 import { TravelChat } from "./travel-chat";
 import { UserMenu } from "./user-menu";
+import { Logo } from "@/components/logo";
 
 const floating =
   "flex flex-col gap-6 bg-card p-5 *:shrink-0 lg:absolute lg:top-3 lg:bottom-3 lg:z-10 lg:overflow-y-auto lg:rounded-2xl lg:border lg:shadow-lg";
@@ -64,7 +65,7 @@ export function TopBar({ title }: { title?: React.ReactNode }) {
   return (
     <header className="z-20 flex h-14 shrink-0 items-center gap-3 border-b bg-card px-4">
       <Link href="/trips" className="text-lg font-bold tracking-tight">
-        {APP_NAME}
+        <Logo />
       </Link>
       {title ? <div className="min-w-0 truncate">{title}</div> : null}
       <span className="ml-auto flex items-center gap-1">
