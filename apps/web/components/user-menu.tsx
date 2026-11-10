@@ -57,7 +57,7 @@ export function UserMenu() {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/#how-it-works">
+          <Link href="/help">
             <CircleHelp aria-hidden /> Help
           </Link>
         </DropdownMenuItem>

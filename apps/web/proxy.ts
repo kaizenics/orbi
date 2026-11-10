@@ -7,7 +7,11 @@ const apiToken = process.env.ORBI_API_TOKEN;
 const auth = authConfig();
 /** Reachable without signing in. */
 const PUBLIC = (path: string) =>
-  path === "/" || path.startsWith("/login") || path.startsWith("/auth/") || path.startsWith("/landing/");
+  path === "/" ||
+  path.startsWith("/login") ||
+  path.startsWith("/help") ||
+  path.startsWith("/auth/") ||
+  path.startsWith("/landing/");
 
 const problem = (status: number, code: string, detail: string) =>
   NextResponse.json({ type: `urn:orbi:problem:${code}`, title: detail, status, code, detail }, { status });
