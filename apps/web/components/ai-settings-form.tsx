@@ -215,7 +215,7 @@ function ModelPicker({
             value={value}
             onValueChange={setChoice}
             options={[
-              ...list.map((m) => ({ value: m.id, label: `${m.label} · ${m.price}` })),
+              ...list.map((m) => ({ value: m.id, label: <ModelLabel name={m.label} price={m.price} /> })),
               { value: CUSTOM, label: "Custom model ID…" },
             ]}
           />
@@ -234,5 +234,20 @@ function ModelPicker({
       <input type="hidden" name="model" value={model} />
       <p className="text-xs text-muted-foreground">{hint}</p>
     </div>
+  );
+}
+
+const RECOMMENDED = "Recommended · ";
+
+/** "Name · price", with the word "Recommended" in green when the model is one of the picks. */
+function ModelLabel({ name, price }: { name: string; price: string }) {
+  if (!price.startsWith(RECOMMENDED)) return <>{`${name} · ${price}`}</>;
+  // One span: the dropdown row lays out its children with gaps between them.
+  return (
+    <span>
+      {`${name} · `}
+      <span className="font-medium text-emerald-600 dark:text-emerald-400">Recommended</span>
+      {` · ${price.slice(RECOMMENDED.length)}`}
+    </span>
   );
 }
