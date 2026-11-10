@@ -74,3 +74,20 @@
     scrollbar-color: color-mix(in srgb, var(--foreground) 28%, transparent) transparent;
   }
 }
+
+/* Hover card on map markers: follows the app theme instead of MapLibre's default white card. */
+.stop-hover .maplibregl-popup-content {
+  max-width: 260px;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--popover);
+  color: var(--popover-foreground);
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.4);
+  pointer-events: none;
+}
+.stop-hover .maplibregl-popup-tip {
+  display: none;
+}

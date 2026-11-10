@@ -8,6 +8,8 @@ export interface StopProperties {
   /** 1-based number shown on the marker. */
   number: number;
   name: string;
+  /** Street address, or "" when the place has none (map feature properties cannot hold null reliably). */
+  address: string;
   color: string;
 }
 
@@ -67,6 +69,7 @@ export function buildMapFeatures(
           dayIndex,
           number: ++number,
           name: dest.name,
+          address: dest.address ?? "",
           color,
         },
       });

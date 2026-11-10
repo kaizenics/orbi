@@ -1,10 +1,11 @@
 "use client";
 
 import "maplibre-gl/dist/maplibre-gl.css";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Layer,
   Map,
+  Popup,
   NavigationControl,
   Source,
   type MapLayerMouseEvent,
@@ -88,6 +89,29 @@ export function TripMap({
     if (stop && mapRef.current) mapRef.current.easeTo({ center: stop.geometry.coordinates, duration: 400 });
   }, [selectedItemId, features]);
 
+  // The numbered marker under the pointer: its name, address and coordinates show in a card.
+  const [hover, setHover] = useState<{
+    itemId: string;
+    name: string;
+    address: string;
+    lng: number;
+    lat: number;
+  } | null>(null);
+  const onMove = (e: MapLayerMouseEvent) => {
+    const f = e.features?.[0];
+    const props = f?.properties as { itemId?: string; name?: string; address?: string } | undefined;
+    if (!f || f.geometry.type !== "Point" || !props?.itemId) {
+      setHover((h) => (h ? null : h));
+      return;
+    }
+    const [lng, lat] = f.geometry.coordinates as [number, number];
+    setHover((h) =>
+      h?.itemId === props.itemId
+        ? h
+        : { itemId: props.itemId!, name: props.name ?? "", address: props.address ?? "", lng, lat },
+    );
+  };
+
   const onClick = (e: MapLayerMouseEvent) => {
     const props = e.features?.[0]?.properties as { itemId?: string; dayIndex?: number } | undefined;
     if (props?.itemId !== undefined && props.dayIndex !== undefined)
@@ -117,9 +141,30 @@ export function TripMap({
         style={{ position: "absolute", inset: 0 }}
         interactiveLayerIds={["stops-circle"]}
         onClick={onClick}
-        cursor="auto"
+        onMouseMove={onMove}
+        onMouseLeave={() => setHover(null)}
+        cursor={hover ? "pointer" : "auto"}
       >
         <NavigationControl position="top-right" showCompass={false} />
+
+        {hover ? (
+          <Popup
+            longitude={hover.lng}
+            latitude={hover.lat}
+            // No fixed anchor: MapLibre opens the card on whichever side of the marker fits the view.
+            offset={18}
+            closeButton={false}
+            closeOnClick={false}
+            focusAfterOpen={false}
+            className="stop-hover"
+          >
+            <p className="font-semibold">{hover.name}</p>
+            {hover.address ? <p className="mt-0.5 text-muted-foreground">{hover.address}</p> : null}
+            <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+              {hover.lat.toFixed(5)}, {hover.lng.toFixed(5)}
+            </p>
+          </Popup>
+        ) : null}
 
         <Source id="legs" type="geojson" data={features.legs}>
           <Layer

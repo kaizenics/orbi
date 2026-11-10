@@ -103,3 +103,22 @@ describe("buildMapFeatures with activities", () => {
     expect(f.stops.features.map((s) => s.properties.number)).toEqual([1, 2]);
   });
 });
+
+describe("buildMapFeatures hover details", () => {
+  it("carries each place's address (empty when it has none) for the map's hover card", () => {
+    const withAddress = {
+      ...data,
+      destinations: [
+        { ...dest(1, 10.29, 123.9), address: "Magallanes Street, Cebu City" },
+        dest(2, 10.3, 123.91),
+        dest(3, 10.31, 123.92),
+      ],
+    } as unknown as TripAggregate;
+    const f = buildMapFeatures(withAddress, new Map(), () => "#000");
+    expect(f.stops.features.map((s) => s.properties.address)).toEqual([
+      "Magallanes Street, Cebu City",
+      "",
+      "",
+    ]);
+  });
+});
