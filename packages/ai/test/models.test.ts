@@ -5,30 +5,42 @@ const fakeFetch = (body: unknown, status = 200) =>
   (async () => new Response(JSON.stringify(body), { status })) as unknown as typeof fetch;
 
 describe("listCheapModels", () => {
-  it("keeps free and cheap OpenRouter chat models, cheapest first", async () => {
+  it("keeps dependable OpenRouter models: recommended first, then cheapest, then free", async () => {
+    const m = (id: string, prompt: string, extra: Record<string, unknown> = {}) => ({
+      id,
+      name: id,
+      created: 1,
+      context_length: 200_000,
+      supported_parameters: ["tools"],
+      pricing: { prompt },
+      ...extra,
+    });
     const models = await listCheapModels(
       "openrouter",
       undefined,
       fakeFetch({
         data: [
-          { id: "big/expensive", name: "Expensive", pricing: { prompt: "0.000003" } },
-          { id: "small/cheap", name: "Cheap", pricing: { prompt: "0.0000001" } },
-          { id: "meta/llama:free", name: "Llama (free)", pricing: { prompt: "0" } },
-          { id: "x/image-gen", name: "Image", pricing: { prompt: "0" } },
-          { id: "c/north-mini-code:free", name: "Coder", pricing: { prompt: "0" } },
-          {
-            id: "g/lyria",
-            name: "Music",
-            pricing: { prompt: "0" },
-            architecture: { output_modalities: ["text", "audio"] },
-          },
-          { id: "odd/variable", name: "Router", pricing: { prompt: "-1" } },
+          m("google/gemini-3.0-flash", "0.0000003", { created: 1 }),
+          m("google/gemini-3.5-flash", "0.0000004", { created: 2 }), // newest of the family
+          m("deepseek/deepseek-v9-chat", "0.0000001"),
+          m("qwen/qwen9-turbo:free", "0"),
+          m("openai/gpt-x", "0.000003"), // too expensive
+          m("mistralai/mistral-small-2", "0.0000001", { supported_parameters: [] }), // no tools
+          m("meta-llama/llama-9-8b", "0.0000001", { context_length: 8_000 }), // short context
+          m("openai/gpt-9-mini (batch)", "0.0000001"),
+          m("deepseek/deepseek-v9-flash-vision-exp", "0.0000001"),
+          m("qwen/qwen9-thinking", "0.0000001"),
+          m("someone/tiny-1b", "0.0000001"), // unknown provider
+          m("meta-llama/llama-9-8b-instruct", "0.0000001"), // too small
+          m("google/lyria", "0", { architecture: { output_modalities: ["text", "audio"] } }),
         ],
       }),
     );
-    expect(models.map((m) => [m.id, m.price])).toEqual([
-      ["meta/llama:free", "Free"],
-      ["small/cheap", "$0.10 / 1M input tokens"],
+    expect(models.map((x) => [x.id, x.price])).toEqual([
+      ["google/gemini-3.5-flash", "Recommended · $0.40 / 1M input · 200K context"],
+      ["deepseek/deepseek-v9-chat", "$0.10 / 1M input · 200K context"],
+      ["google/gemini-3.0-flash", "$0.30 / 1M input · 200K context"],
+      ["qwen/qwen9-turbo:free", "Free · often busy, may not answer"],
     ]);
   });
 

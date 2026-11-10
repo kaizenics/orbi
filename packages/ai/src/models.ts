@@ -7,13 +7,46 @@ export interface ModelOption {
   price: string;
 }
 
-/** OpenRouter models above this input price (USD per token) are left out: $0.50 per million. */
-const MAX_PROMPT_PRICE = 0.5 / 1_000_000;
+/** OpenRouter: models above this input price (USD per token) are left out: $1 per million. */
+const MAX_PROMPT_PRICE = 1 / 1_000_000;
+/** Room for long pasted itineraries and conversation history. */
+const MIN_CONTEXT = 64_000;
 const MAX_OPTIONS = 40;
 
 /** Not general chat models (speech, images, embeddings, coding specialists…). */
 const NOT_CHAT =
   /audio|realtime|transcribe|tts|speech|image|embed|search|moderation|live|vision-preview|computer-use|code/i;
+
+/**
+ * Variants that tend to be slow, rate-limited or unfinished: batch-only, previews and experiments,
+ * reasoning ("thinking") models that take long to answer, and vision or omni variants.
+ */
+const UNSTABLE =
+  /(^|[-_.:/ (])(batch|preview|alpha|beta|exp|experimental|stealth|thinking|r1|vision|omni|vl|safeguard|legal)([-_.:/ )]|$)/i;
+
+/** Small models (under ~15B parameters): too weak to build a whole itinerary reliably. */
+const TINY = /(^|[-_/])(\d|1[0-4])b([-_]|$)|nemo/i;
+
+/** Well-known providers whose models are widely used and served reliably on OpenRouter. */
+const POPULAR = /^(openai|google|anthropic|deepseek|qwen|meta-llama|mistralai|x-ai|z-ai|moonshotai)\//;
+
+/**
+ * Fast, dependable families, best first. The newest model of each family in the live list is
+ * recommended, so new releases show up without an ORBI update.
+ */
+const RECOMMENDED = [
+  /^google\/gemini-[\d.]+-flash$/,
+  /^openai\/gpt-[\d.]+-mini$/,
+  /^anthropic\/claude-haiku-[\d.]+$/,
+  /^deepseek\/deepseek-v[\d.]+-flash$/,
+  /^google\/gemini-[\d.]+-flash-lite$/,
+  /^qwen\/qwen[\d.]+-flash$/,
+  /^openai\/gpt-[\d.]+-nano$/,
+];
+
+const perMillion = (p: number) => `$${(p * 1_000_000).toFixed(2)}`;
+const contextSize = (n: number) =>
+  n >= 1_000_000 ? `${Math.round(n / 100_000) / 10}M` : `${Math.round(n / 1000)}K`;
 
 type Fetch = typeof fetch;
 
@@ -46,28 +79,61 @@ export async function listCheapModels(
       data: {
         id: string;
         name: string;
+        created?: number;
+        context_length?: number;
+        supported_parameters?: string[];
         pricing?: { prompt?: string; completion?: string };
         architecture?: { output_modalities?: string[] };
       }[];
     }>(fetchFn, "https://openrouter.ai/api/v1/models", {});
-    return (
-      data
-        .map((m) => ({ ...m, prompt: Number(m.pricing?.prompt ?? NaN) }))
-        .filter((m) => Number.isFinite(m.prompt) && m.prompt >= 0 && m.prompt <= MAX_PROMPT_PRICE)
-        // Text-only output: drops music/image generators, which OpenRouter also lists as free.
-        .filter(
-          (m) =>
-            (m.architecture?.output_modalities ?? ["text"]).every((o) => o === "text") &&
-            !NOT_CHAT.test(m.id),
-        )
-        .sort((a, b) => a.prompt - b.prompt || a.name.localeCompare(b.name))
-        .slice(0, MAX_OPTIONS)
-        .map((m) => ({
-          id: m.id,
-          label: m.name,
-          price: m.prompt === 0 ? "Free" : `$${(m.prompt * 1_000_000).toFixed(2)} / 1M input tokens`,
-        }))
-    );
+    const usable = data
+      .map((m) => ({ ...m, prompt: Number(m.pricing?.prompt ?? NaN), ctx: m.context_length ?? 0 }))
+      .filter(
+        (m) =>
+          Number.isFinite(m.prompt) &&
+          m.prompt >= 0 &&
+          m.prompt <= MAX_PROMPT_PRICE &&
+          // ORBI's chat creates and edits trips through tool calls; models without tools fail there.
+          (m.supported_parameters ?? []).includes("tools") &&
+          m.ctx >= MIN_CONTEXT &&
+          // Text-only output: drops music/image generators, which OpenRouter also lists as free.
+          (m.architecture?.output_modalities ?? ["text"]).every((o) => o === "text") &&
+          POPULAR.test(m.id) &&
+          !NOT_CHAT.test(m.id) &&
+          !TINY.test(m.id) &&
+          !UNSTABLE.test(m.id) &&
+          !UNSTABLE.test(m.name),
+      );
+
+    const picked = new Set<string>();
+    const recommended = RECOMMENDED.flatMap((family) => {
+      const newest = usable
+        .filter((m) => m.prompt > 0 && family.test(m.id))
+        .sort((a, b) => (b.created ?? 0) - (a.created ?? 0))[0];
+      if (!newest || picked.has(newest.id)) return [];
+      picked.add(newest.id);
+      return [newest];
+    });
+    const others = usable
+      .filter((m) => !picked.has(m.id) && m.prompt > 0)
+      .sort((a, b) => a.prompt - b.prompt);
+    // Free models work, but share busy capacity, so they come last and say so.
+    const free = usable.filter((m) => m.prompt === 0);
+
+    return [
+      ...recommended.map((m) => ({
+        id: m.id,
+        label: m.name,
+        price: `Recommended · ${perMillion(m.prompt)} / 1M input · ${contextSize(m.ctx)} context`,
+      })),
+      // Room is kept for the free models at the end.
+      ...others.slice(0, Math.max(0, MAX_OPTIONS - recommended.length - free.length)).map((m) => ({
+        id: m.id,
+        label: m.name,
+        price: `${perMillion(m.prompt)} / 1M input · ${contextSize(m.ctx)} context`,
+      })),
+      ...free.map((m) => ({ id: m.id, label: m.name, price: "Free · often busy, may not answer" })),
+    ].slice(0, MAX_OPTIONS);
   }
 
   if (!apiKey) return [];
