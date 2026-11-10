@@ -12,6 +12,12 @@ export const queryKeys = {
   placeSearch: (q: string, near: string | undefined) => ["placeSearch", q, near] as const,
 };
 
+/** Identifies a day's route by its ordered stops and travel mode, so any itinerary change refetches it. */
+export function dayRouteKey(trip: TripAggregate, day: TripAggregate["days"][number]) {
+  const signature = `${day.travelMode ?? trip.trip.defaultTravelMode}:${day.items.map((i) => `${i.id}/${i.travelModeToNext ?? ""}`).join(",")}`;
+  return queryKeys.dayRoute(day.id, signature);
+}
+
 export function useClientConfig() {
   return useQuery({
     queryKey: queryKeys.config,
@@ -39,9 +45,8 @@ export function useDayRoutes(data: TripAggregate | undefined) {
   const days = data?.days ?? [];
   const results = useQueries({
     queries: days.map((day) => {
-      const signature = `${day.travelMode ?? data!.trip.defaultTravelMode}:${day.items.map((i) => `${i.id}/${i.travelModeToNext ?? ""}`).join(",")}`;
       return {
-        queryKey: queryKeys.dayRoute(day.id, signature),
+        queryKey: dayRouteKey(data!, day),
         queryFn: async () => unwrap(await api().days[":id"].route.$get({ param: { id: day.id }, query: {} })),
         enabled: day.items.length >= 2,
         staleTime: 5 * 60_000,

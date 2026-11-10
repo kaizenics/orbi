@@ -4,11 +4,14 @@ import type { AppType } from "./app.ts";
 export interface OrbiClientOptions {
   /** Bearer token, required when the server runs with ORBI_API_TOKEN. */
   token?: string;
+  /** Replaces the global fetch (the web app uses it to fail fast with a clear message when offline). */
+  fetch?: typeof fetch;
 }
 
 /** Typed API client for web and mobile. Imports server types only, never server code. */
 export function createOrbiClient(baseUrl: string, options: OrbiClientOptions = {}) {
   return hc<AppType>(baseUrl, {
+    ...(options.fetch ? { fetch: options.fetch } : {}),
     headers: (): Record<string, string> =>
       options.token ? { Authorization: `Bearer ${options.token}` } : {},
   });

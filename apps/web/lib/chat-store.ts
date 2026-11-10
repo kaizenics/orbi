@@ -110,6 +110,16 @@ export async function sendChat(
   onTripsChanged: (tripId: string) => void,
 ) {
   if (get().busy || !text.trim()) return;
+  if (!navigator.onLine) {
+    set({
+      messages: [
+        ...get().messages,
+        { role: "user", content: text.trim() },
+        { role: "assistant", content: "You're offline. The assistant needs a connection.", error: true },
+      ],
+    });
+    return;
+  }
   const history: ChatMessage[] = [...get().messages, { role: "user", content: text.trim() }];
   set({ messages: [...history, { role: "assistant", content: "" }], busy: true });
   abort = new AbortController();
