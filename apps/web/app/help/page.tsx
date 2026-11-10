@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { APP_NAME } from "@orbi/core";
+import { HelpMenu } from "@/components/help-menu";
 import { Logo } from "@/components/logo";
 
 export const metadata: Metadata = {
@@ -239,8 +240,7 @@ const GROUPS: { title: string; sections: Section[] }[] = [
         body: (
           <>
             <p>
-              The round button at the bottom right opens the ORBI assistant on every page. Ask travel
-              questions, or:
+              The round button at the bottom right opens the ORBI on every page. Ask travel questions, or:
             </p>
             <ul className="list-disc space-y-2 pl-5">
               <li>
@@ -493,26 +493,15 @@ export default function HelpPage() {
         </nav>
       </header>
 
-      <div className="mx-auto grid w-full max-w-7xl flex-1 gap-10 px-6 py-10 lg:grid-cols-[220px_1fr] lg:py-14">
+      <div className="mx-auto grid w-full max-w-7xl flex-1 gap-10 px-6 py-10 lg:grid-cols-[280px_1fr] lg:py-14">
         <aside className="lg:sticky lg:top-24 lg:self-start">
-          <nav aria-label="Guide" className="flex flex-col gap-6 text-sm">
-            {GROUPS.map((group) => (
-              <div key={group.title}>
-                <p className="mb-2 font-heading font-semibold">{group.title}</p>
-                <ul className="flex flex-col gap-1.5 border-l">
-                  {group.sections.map((s) => (
-                    <li key={s.id}>
-                      <a
-                        href={`#${s.id}`}
-                        className="-ml-px block border-l border-transparent pl-3 text-muted-foreground hover:border-foreground hover:text-foreground"
-                      >
-                        {s.title}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+          <nav aria-label="Guide">
+            <HelpMenu
+              groups={GROUPS.map((g) => ({
+                title: g.title,
+                sections: g.sections.map(({ id, title }) => ({ id, title })),
+              }))}
+            />
           </nav>
         </aside>
 
