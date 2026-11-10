@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, MessageCircle, Minus, Trash2 } from "lucide-react";
+import { ChatMarkdown } from "@/components/chat-markdown";
 import { LogoMark } from "@/components/logo";
 import PromptBar from "@/components/PromptBar";
 import ThoughtLine from "@/components/ThoughtLine";
@@ -129,14 +130,14 @@ export function TravelChat() {
                   <div
                     key={i}
                     className={cn(
-                      "max-w-[85%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap",
+                      "max-w-[85%] min-w-0 rounded-2xl px-3 py-2 text-sm break-words",
                       m.role === "user"
-                        ? "self-end bg-primary text-primary-foreground"
+                        ? "self-end bg-primary whitespace-pre-wrap text-primary-foreground"
                         : "self-start bg-muted",
                       m.error && "text-destructive",
                     )}
                   >
-                    {m.content}
+                    {m.role === "assistant" ? <ChatMarkdown>{m.content}</ChatMarkdown> : m.content}
                     {/* Waiting for the answer (or a step like "Creating your trip…"): the thought line. */}
                     {busy && i === messages.length - 1 && !m.content && !m.trip && !m.edited && !m.error ? (
                       <ThoughtLine
