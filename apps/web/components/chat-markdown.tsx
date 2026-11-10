@@ -37,11 +37,18 @@ const components: Components = {
 
 /**
  * Renders an AI reply as Markdown. Raw HTML is not rendered (react-markdown's default), and
- * unsafe link schemes such as javascript: are dropped, so model output cannot inject markup.
+ * unsafe link schemes such as javascript: are dropped, and images are not rendered, so model output
+ * cannot inject markup or trigger requests.
  */
 export function ChatMarkdown({ children }: { children: string }) {
   return (
-    <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={components}
+      // Images are never rendered: the browser would fetch their URL automatically, which a
+      // prompt-injected reply could use to leak chat or trip details to another server.
+      disallowedElements={["img"]}
+    >
       {children}
     </ReactMarkdown>
   );
