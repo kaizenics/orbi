@@ -101,6 +101,7 @@ async function locate(
   key: string,
   area: LatLng | undefined,
   geocode: Geocode,
+  region: string | null = null,
 ): Promise<ProposedStop> {
   const base = {
     key,
@@ -112,13 +113,26 @@ async function locate(
   };
   // Activities (wake up, breakfast at the hotel…) have no location: nothing to look up.
   if (stop.activity) return { ...base, query: "", location: null, activityType: stop.activity };
-  const query = [stop.name, stop.localityHint].filter(Boolean).join(", ");
-  const candidates = await geocode(query, area);
-  const location =
-    candidates.find(
-      (c) => !area || distanceKm(area, { lat: c.latitude, lng: c.longitude }) <= MAX_DISTANCE_FROM_AREA_KM,
-    ) ?? null;
-  return { ...base, query, location, activityType: null };
+  // Hotels and small venues are often listed under a slightly different spelling or area, so
+  // retry with the region and then the bare name before giving up. Only the first query is
+  // spent when it succeeds. The coordinates always come from the geocoder, never from the AI.
+  const queries = [
+    ...new Set(
+      [[stop.name, stop.localityHint], [stop.name, region], [stop.name]]
+        .map((parts) => parts.filter(Boolean).join(", "))
+        .filter(Boolean),
+    ),
+  ];
+  let location = null;
+  for (const query of queries) {
+    const candidates = await geocode(query, area);
+    location =
+      candidates.find(
+        (c) => !area || distanceKm(area, { lat: c.latitude, lng: c.longitude }) <= MAX_DISTANCE_FROM_AREA_KM,
+      ) ?? null;
+    if (location) break;
+  }
+  return { ...base, query: queries[0] ?? "", location, activityType: null };
 }
 
 /**
@@ -136,7 +150,7 @@ export async function locateItinerary(
   for (const [i, day] of days.entries()) {
     const stops: ProposedStop[] = [];
     for (const [j, stop] of day.stops.entries())
-      stops.push(await locate(stop, `d${i + 1}s${j + 1}`, area, geocode));
+      stops.push(await locate(stop, `d${i + 1}s${j + 1}`, area, geocode, region));
     out.push({ title: day.title, stops });
   }
   return out;
@@ -157,7 +171,7 @@ export async function generateDraft(
     const stops: ProposedStop[] = [];
     // Sequential on purpose: the geocoder is rate limited (1 req/s on public Nominatim).
     for (const [j, stop] of day.stops.entries())
-      stops.push(await locate(stop, `d${i + 1}s${j + 1}`, area, deps.geocode));
+      stops.push(await locate(stop, `d${i + 1}s${j + 1}`, area, deps.geocode, data.trip.regionName));
     days.push({ dayId: data.days[i]!.id, title: day.title, stops });
   }
   return { kind: "draft", summary: output.summary, days };
@@ -201,7 +215,7 @@ export async function proposeEdit(
       const dayId = snapshot.dayRefs.get(op.day);
       if (!dayId) rejected.push(`Addition to unknown day ${op.day}`);
       else {
-        const proposed = await locate(op.place, `op${i + 1}`, area, deps.geocode);
+        const proposed = await locate(op.place, `op${i + 1}`, area, deps.geocode, data.trip.regionName);
         operations.push({ op: "add", dayId, toPosition: op.position - 1, stop: proposed });
       }
     }

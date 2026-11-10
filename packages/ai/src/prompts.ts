@@ -1,7 +1,7 @@
 import type { TripAggregate } from "@orbi/core";
 
 /** Bump when prompt wording changes, so proposals can be traced to a prompt version. */
-export const PROMPT_VERSION = "2026-11-10.1";
+export const PROMPT_VERSION = "2026-11-10.2";
 
 const RULES = `Rules:
 - Suggest only real, existing, publicly visitable places that you are confident exist. Use their official names.
@@ -13,8 +13,10 @@ const RULES = `Rules:
 /** How a full, realistic day is laid out (shared by drafts and the chat). */
 export const DETAILED_DAY = `Plan complete days in time order, like a real travel itinerary:
 - Start with wake up and breakfast, end with dinner and returning to the hotel. Include lunch, and short rests or free time when the pace is relaxed.
-- A meal or stay at a specific, named restaurant, cafe, market or hotel is a real place (activity: null, category food or lodging) so it appears on the map. A generic moment (wake up, breakfast at the hotel, rest, free time, getting ready, transfer) is an activity: set activity, use a short label as name, leave localityHint empty, and give a realistic duration.
-- Travel between places is calculated by the app; do not add separate travel entries except a transfer that takes its own time (e.g. airport check-in).`;
+- Anything with a location on a map is a real place (activity: null) so the route passes through it: airports and terminals (arrival and departure, with their official name, e.g. "Mactan-Cebu International Airport"), train and bus stations, ports, hotels and resorts (category lodging, for check-in, check-out and the night's stay), restaurants, cafes, markets and sights. Arriving somewhere means arriving AT that airport or station, so name it as a place.
+- Only a moment with no place of its own is an activity: set activity, use a short label as name, leave localityHint empty, and give a realistic duration. Examples: wake up, breakfast at the hotel, rest, free time, getting ready, baggage claim, a ride between two places.
+- If the traveller's hotel is not named, use the activity "check_in" with the label "Check in at your hotel"; never invent a hotel name.
+- Travel between places is calculated by the app; do not add separate entries for it.`;
 
 function tripContext(data: TripAggregate): string {
   const { trip, preferences: p } = data;
