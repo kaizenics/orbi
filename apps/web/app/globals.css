@@ -5,11 +5,17 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme inline {
-  --font-sans: var(--font-geist-sans), "Helvetica Neue", sans-serif;
+  --font-sans: var(--font-brand-sans), "Helvetica Neue", sans-serif;
+  --font-heading: var(--font-brand-heading), var(--font-brand-sans), sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
 @layer base {
+  h1,
+  h2,
+  h3 {
+    @apply font-heading;
+  }
   * {
     @apply border-border;
   }

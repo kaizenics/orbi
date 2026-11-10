@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
+import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import localFont from "next/font/local";
 import { APP_NAME, APP_TAGLINE } from "@orbi/core";
 import { themeInitScript } from "@/lib/theme";
 import { Providers } from "./providers";
 import "./globals.css";
 
-const geistSans = localFont({ src: "./fonts/GeistVF.woff", variable: "--font-geist-sans" });
+// Self-hosted at build time by next/font (no request to Google from visitors' browsers).
+// Inter for text, Plus Jakarta Sans for headings and the wordmark.
+const sans = Inter({ subsets: ["latin", "latin-ext"], variable: "--font-brand-sans" });
+const heading = Plus_Jakarta_Sans({ subsets: ["latin", "latin-ext"], variable: "--font-brand-heading" });
 const geistMono = localFont({ src: "./fonts/GeistMonoVF.woff", variable: "--font-geist-mono" });
 
 export const metadata: Metadata = {
@@ -20,7 +24,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body className={`${sans.variable} ${heading.variable} ${geistMono.variable}`}>
         <Providers>{children}</Providers>
       </body>
     </html>
