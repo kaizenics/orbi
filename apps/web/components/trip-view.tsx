@@ -14,6 +14,8 @@ import { AiAssistant } from "./ai-assistant";
 import { DayPlan } from "./day-plan";
 import { IdeasList } from "./ideas-list";
 import { MapPlaceholder, PanelMessage, PlannerShell } from "./planner-shell";
+import { TripPanelSkeleton, TripSideSkeleton } from "./skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PlaceSearch } from "./place-search";
 import { TripHeader } from "./trip-header";
 import { TripMap } from "./trip-map";
@@ -22,7 +24,14 @@ import { FormSelect } from "./form-select";
 export function TripView({ tripId }: { tripId: string }) {
   const trip = useTrip(tripId);
 
-  if (trip.isPending) return <PlannerShell panel={<PanelMessage title="Loading trip…" />} map={null} />;
+  if (trip.isPending)
+    return (
+      <PlannerShell
+        panel={<TripPanelSkeleton />}
+        side={<TripSideSkeleton />}
+        map={<Skeleton className="size-full min-h-[50vh] rounded-none lg:min-h-0" />}
+      />
+    );
   if (trip.isError) {
     return (
       <PlannerShell

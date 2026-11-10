@@ -17,6 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { MAX_TIMEZONES, setPreference, usePreferences } from "@/lib/preferences";
 import { NewTripDialog } from "./new-trip-form";
 import { PanelMessage } from "./planner-shell";
+import { TripsGridSkeleton } from "./skeletons";
 
 type Filter = "upcoming" | "past" | "all";
 
@@ -122,7 +123,7 @@ export function TripsDashboard() {
         </div>
 
         {trips.isPending ? (
-          <PanelMessage title="Loading trips…" />
+          <TripsGridSkeleton />
         ) : trips.isError ? (
           <PanelMessage title="Couldn't load trips">
             {trips.error.message}{" "}
