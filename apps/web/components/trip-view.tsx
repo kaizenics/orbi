@@ -24,6 +24,21 @@ import { FormSelect } from "./form-select";
 export function TripView({ tripId }: { tripId: string }) {
   const trip = useTrip(tripId);
 
+  if (trip.isPending && trip.fetchStatus === "paused") {
+    return (
+      <PlannerShell
+        panel={
+          <PanelMessage title="You're offline">
+            This trip isn't saved on this device. Open it once while online to read it offline.{" "}
+            <Link href="/trips" className="underline">
+              Back to trips
+            </Link>
+          </PanelMessage>
+        }
+        map={null}
+      />
+    );
+  }
   if (trip.isPending)
     return (
       <PlannerShell
@@ -32,7 +47,8 @@ export function TripView({ tripId }: { tripId: string }) {
         map={<Skeleton className="size-full min-h-[50vh] rounded-none lg:min-h-0" />}
       />
     );
-  if (trip.isError) {
+  // A failed refresh keeps showing the saved copy; the error only replaces the page when there is none.
+  if (trip.isError && !trip.data) {
     return (
       <PlannerShell
         panel={
@@ -46,7 +62,7 @@ export function TripView({ tripId }: { tripId: string }) {
       />
     );
   }
-  return <TripPlanner data={trip.data} />;
+  return <TripPlanner data={trip.data!} />;
 }
 
 function TripPlanner({ data }: { data: TripAggregate }) {

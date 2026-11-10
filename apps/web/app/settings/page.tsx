@@ -5,6 +5,8 @@ import { TopBar } from "@/components/planner-shell";
 import { GeneralSettings, MapSettings, SettingRow, SettingsCard } from "@/components/settings-panels";
 import { authConfig, currentUser } from "@/lib/session";
 import { Avatar } from "@/components/avatar";
+import { LogoutForm } from "@/components/logout-form";
+import { OfflineSettings } from "@/components/offline-settings";
 import { Button } from "@/components/ui/button";
 
 const SECTIONS = [
@@ -85,12 +87,7 @@ async function Section({ id }: { id: SectionId }) {
         />
       );
     case "offline":
-      return (
-        <SettingRow
-          label="Offline mode isn't available yet"
-          description="The web app needs an internet connection to load trips, maps and routes. Saving trips for offline use is planned for the Android app."
-        />
-      );
+      return <OfflineSettings />;
     case "account":
       return <AccountSettings />;
   }
@@ -119,11 +116,11 @@ async function AccountSettings() {
         label="Your trips"
         description="Trips are private to this account. Nobody else can see them."
       >
-        <form method="post" action="/auth/logout">
+        <LogoutForm>
           <Button variant="outline" type="submit">
             Log out
           </Button>
-        </form>
+        </LogoutForm>
       </SettingRow>
     </>
   );

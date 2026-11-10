@@ -122,9 +122,14 @@ export function TripsDashboard() {
           </div>
         </div>
 
-        {trips.isPending ? (
+        {trips.isPending && trips.fetchStatus === "paused" ? (
+          <PanelMessage title="You're offline">
+            Your trips aren't saved on this device yet. Open My Trips once while online, or use Settings →
+            Offline to save them.
+          </PanelMessage>
+        ) : trips.isPending ? (
           <TripsGridSkeleton />
-        ) : trips.isError ? (
+        ) : trips.isError && !trips.data ? (
           <PanelMessage title="Couldn't load trips">
             {trips.error.message}{" "}
             <Button variant="link" className="h-auto p-0" onClick={() => trips.refetch()}>

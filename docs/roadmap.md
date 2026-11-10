@@ -160,7 +160,7 @@ Phases 3 and 4 overlap in practice (map and itinerary are one experience); they 
 **Tasks**
 
 1. Responsive web (360 px → wide), PWA manifest for iPhone home-screen use, dark mode via tokens.
-2. Mobile read-only offline cache (persisted query cache) and connection status indicator; server URL/token settings screen.
+2. **Web read-only offline mode: done (2026-11-10, see technical-decisions §14).** Mobile read-only offline cache (persisted query cache) and connection status indicator; server URL/token settings screen.
 3. Playwright E2E for the core journey with stubbed providers; mobile manual test checklist.
 4. `docs/self-hosting.md`: Docker Compose profiles (server, Ollama, OSRM, Nominatim/Photon, PMTiles), regional extract scripts, Tailscale/Headscale guide, backups.
 5. Final OSS pass: README quick-start verified on a clean machine, CONTRIBUTING (setup, conventions, DCO/CLA per TD-17), issue/PR templates, `ATTRIBUTIONS.md`, security policy.

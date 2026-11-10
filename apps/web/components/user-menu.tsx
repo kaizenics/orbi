@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, CircleHelp, LogOut, Settings } from "lucide-react";
 import { APP_NAME } from "@orbi/core";
 import { Avatar } from "@/components/avatar";
+import { LogoutForm } from "@/components/logout-form";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -64,13 +65,13 @@ export function UserMenu() {
         {email ? (
           <>
             <DropdownMenuSeparator />
-            <form method="post" action="/auth/logout">
+            <LogoutForm>
               <DropdownMenuItem variant="destructive" asChild>
                 <button type="submit" className="w-full">
                   <LogOut aria-hidden /> Log out
                 </button>
               </DropdownMenuItem>
-            </form>
+            </LogoutForm>
           </>
         ) : null}
         <DropdownMenuSeparator />

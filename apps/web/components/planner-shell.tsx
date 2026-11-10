@@ -1,6 +1,7 @@
 import { APP_NAME } from "@orbi/core";
 import Link from "next/link";
 import { ThemeToggle } from "./theme-toggle";
+import { OfflineBanner } from "./offline-banner";
 import { TravelChat } from "./travel-chat";
 import { UserMenu } from "./user-menu";
 import { Logo } from "@/components/logo";
@@ -63,17 +64,20 @@ export function PanelMessage({ title, children }: { title: string; children?: Re
 /** App bar: logo, optional page title, theme toggle and settings. */
 export function TopBar({ title }: { title?: React.ReactNode }) {
   return (
-    <header className="z-20 flex h-14 shrink-0 items-center gap-3 border-b bg-card px-4">
-      <Link href="/trips" className="text-lg font-bold tracking-tight">
-        <Logo />
-      </Link>
-      {title ? <div className="min-w-0 truncate">{title}</div> : null}
-      <span className="ml-auto flex items-center gap-1">
-        <ThemeToggle />
-        <UserMenu />
-      </span>
-      {/* Floating, so it can live with the bar on every app page. */}
-      <TravelChat />
-    </header>
+    <>
+      <header className="z-20 flex h-14 shrink-0 items-center gap-3 border-b bg-card px-4">
+        <Link href="/trips" className="text-lg font-bold tracking-tight">
+          <Logo />
+        </Link>
+        {title ? <div className="min-w-0 truncate">{title}</div> : null}
+        <span className="ml-auto flex items-center gap-1">
+          <ThemeToggle />
+          <UserMenu />
+        </span>
+        {/* Floating, so it can live with the bar on every app page. */}
+        <TravelChat />
+      </header>
+      <OfflineBanner />
+    </>
   );
 }
