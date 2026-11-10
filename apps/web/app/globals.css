@@ -36,3 +36,41 @@
     left: 424px;
   }
 }
+
+/*
+ * Thin, arrow-less scrollbars everywhere (page, panels, menus), following the theme.
+ * Chromium and Safari: styled pieces. Firefox: the standard properties.
+ * (Elements with scrollbar-width: none still hide their scrollbar.)
+ */
+@supports selector(::-webkit-scrollbar) {
+  *::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  *::-webkit-scrollbar-track,
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+  *::-webkit-scrollbar-thumb {
+    /* The transparent border insets the thumb from the edge, so it looks thin and floating. */
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background-color: color-mix(in srgb, var(--foreground) 24%, transparent);
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover,
+  *::-webkit-scrollbar-thumb:active {
+    background-color: color-mix(in srgb, var(--foreground) 45%, transparent);
+  }
+}
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--foreground) 28%, transparent) transparent;
+  }
+}
