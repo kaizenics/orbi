@@ -1,8 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { APP_NAME } from "@orbi/core";
-import { HeroLines, HeroVisual, PhotoBand, PressButton, Reveal, Tile } from "@/components/landing/motion";
+import { HeroLines, HeroVisual, PhotoBand, Reveal, Tile } from "@/components/landing/motion";
+import { StarCta } from "@/components/landing/star-cta";
 import { Logo } from "@/components/logo";
 import { UserMenu } from "@/components/user-menu";
 import { currentEmail } from "@/lib/session";
@@ -21,6 +22,18 @@ const STEPS = [
   },
   { title: "Go", body: "Open the plan on your phone and hand each stop to your maps app for directions." },
 ];
+
+/** White button (in both themes) for the repository. */
+function GithubButton() {
+  return (
+    <a
+      href={GITHUB}
+      className="inline-flex h-12 items-center gap-2 rounded-full border border-zinc-200 bg-white px-7 text-base font-medium text-zinc-900 shadow-sm transition hover:bg-zinc-100 active:scale-[0.98]"
+    >
+      View on GitHub <ArrowUpRight aria-hidden className="size-4" />
+    </a>
+  );
+}
 
 export default async function LandingPage() {
   const signedIn = (await currentEmail()) !== null;
@@ -70,24 +83,8 @@ export default async function LandingPage() {
               </p>
             </Reveal>
             <Reveal delay={0.5} className="flex flex-wrap items-center gap-3">
-              <PressButton>
-                <Link
-                  href="/trips"
-                  className="group inline-flex h-12 items-center gap-2 rounded-full bg-primary px-6 font-medium text-primary-foreground"
-                >
-                  {cta}
-                  <ArrowRight
-                    aria-hidden
-                    className="size-4 transition-transform group-hover:translate-x-0.5"
-                  />
-                </Link>
-              </PressButton>
-              <a
-                href={GITHUB}
-                className="inline-flex h-12 items-center gap-2 rounded-full border px-6 font-medium hover:bg-muted"
-              >
-                View on GitHub
-              </a>
+              <StarCta href="/trips">{cta}</StarCta>
+              <GithubButton />
             </Reveal>
           </div>
 
@@ -180,7 +177,7 @@ export default async function LandingPage() {
                 <div className="relative mt-6 h-64 overflow-hidden">
                   <Image
                     src="/landing/chat.png"
-                    alt="ORBI assistant conversation"
+                    alt="ORBI conversation"
                     fill
                     sizes="(min-width: 1024px) 33vw, 100vw"
                     className="object-cover object-top px-10 transition-transform duration-700 group-hover:-translate-y-4"
@@ -262,24 +259,8 @@ export default async function LandingPage() {
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <PressButton>
-                <Link
-                  href="/trips"
-                  className="group inline-flex h-12 items-center gap-2 rounded-full bg-primary px-6 font-medium text-primary-foreground"
-                >
-                  {cta}
-                  <ArrowRight
-                    aria-hidden
-                    className="size-4 transition-transform group-hover:translate-x-0.5"
-                  />
-                </Link>
-              </PressButton>
-              <a
-                href={GITHUB}
-                className="inline-flex h-12 items-center gap-2 rounded-full border px-6 font-medium hover:bg-muted"
-              >
-                View on GitHub <ArrowUpRight aria-hidden className="size-4" />
-              </a>
+              <StarCta href="/trips">{cta}</StarCta>
+              <GithubButton />
             </div>
           </Reveal>
         </section>
