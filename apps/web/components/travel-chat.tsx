@@ -98,7 +98,10 @@ export function TravelChat() {
               </Button>
             </header>
 
-            <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-4" aria-live="polite">
+            <div
+              className="flex flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto p-4"
+              aria-live="polite"
+            >
               {!connection ? (
                 <p className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
                   Add your AI key in{" "}
@@ -145,6 +148,7 @@ export function TravelChat() {
                         label={m.status ?? "Thinking…"}
                         collapsible={false}
                         fontSize={14}
+                        className="max-w-full overflow-hidden"
                         color="var(--muted-foreground)"
                       />
                     ) : null}

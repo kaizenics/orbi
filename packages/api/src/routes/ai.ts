@@ -160,7 +160,9 @@ export function aiRoutes(deps: AiRouteDeps) {
               await send({ error: "I couldn't tell which trip to change. Open it, or say its name." });
               continue;
             }
-            await send({ status: `Updating ${target.name}…` });
+            // Short enough for one line in the chat bubble, even with a long trip name.
+            const label = target.name.length > 22 ? `${target.name.slice(0, 21)}…` : target.name;
+            await send({ status: `Updating ${label}…` });
             try {
               await send({ edited: await editTripFromChat(model, target.id, event.instruction) });
             } catch (error) {
@@ -168,7 +170,7 @@ export function aiRoutes(deps: AiRouteDeps) {
               await send({ error: error instanceof Error ? error.message : "I couldn't change that trip." });
             }
           } else {
-            await send({ status: "Creating your trip and finding each place on the map…" });
+            await send({ status: "Building your trip…" });
             try {
               await send({ trip: await createTripFromChat(owner, event.trip) });
             } catch (error) {

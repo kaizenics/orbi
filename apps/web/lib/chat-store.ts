@@ -164,6 +164,13 @@ export async function sendChat(
     if ((e as Error).name !== "AbortError")
       patchLast((m) => ({ ...m, error: true, content: m.content || "Something went wrong. Try again." }));
   } finally {
+    // A reply that ended with nothing in it would leave an empty bubble behind.
+    const stopped = abort?.signal.aborted ?? false;
+    patchLast((m) =>
+      m.content || m.trip || m.edited || m.error
+        ? m
+        : { ...m, error: !stopped, content: stopped ? "Stopped." : "No answer came back. Try again." },
+    );
     abort = null;
     patchLast((m) => ({ ...m, status: undefined }));
     set({ busy: false, unread: !get().open });
