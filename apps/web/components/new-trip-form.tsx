@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DatePicker } from "@/components/date-picker";
+import { FormSelect } from "@/components/form-select";
+import { DEFAULTS } from "@orbi/core";
+import { CURRENCY_OPTIONS } from "@/lib/format";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 /** "New trip" form in a shadcn dialog; opens the trip once it is created. */
@@ -45,6 +48,7 @@ export function NewTripDialog({
                   ? { startDate, endDate }
                   : { dayCount: Number(f.get("dayCount") || 1) }),
                 budgetMinor: parseMoney(f.get("budget")),
+                currency: String(f.get("currency") || DEFAULTS.currency),
               },
               { onSuccess: (trip) => router.push(`/trips/${trip.trip.id}`) },
             );
@@ -74,10 +78,14 @@ export function NewTripDialog({
               <Input name="dayCount" type="number" min={1} max={60} defaultValue={3} />
             </Label>
             <Label className={labelClass}>
-              Budget (₱)
+              Budget
               <Input name="budget" inputMode="decimal" placeholder="10000" />
             </Label>
           </div>
+          <Label className={labelClass}>
+            Currency
+            <FormSelect name="currency" defaultValue={DEFAULTS.currency} options={CURRENCY_OPTIONS} />
+          </Label>
           {create.isError ? <p className="text-sm text-destructive">{create.error.message}</p> : null}
           <div className="flex gap-2">
             <Button type="submit" disabled={create.isPending}>

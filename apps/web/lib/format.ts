@@ -22,6 +22,22 @@ export function formatMinutes(min: number): string {
   return m ? `${h} h ${m} min` : `${h} h`;
 }
 
+/** Every ISO 4217 currency the runtime knows, as select options ("JPY · Japanese Yen"). */
+const currencyNames = new Intl.DisplayNames("en", { type: "currency" });
+export const CURRENCY_OPTIONS = Intl.supportedValuesOf("currency").map((code) => ({
+  value: code,
+  label: `${code} · ${currencyNames.of(code) ?? code}`,
+}));
+
+/** Short symbol for a currency code, e.g. "₱" for PHP, "¥" for JPY. */
+export function currencySymbol(currency: string): string {
+  return (
+    new Intl.NumberFormat("en", { style: "currency", currency, currencyDisplay: "narrowSymbol" })
+      .formatToParts(0)
+      .find((p) => p.type === "currency")?.value ?? currency
+  );
+}
+
 export function formatMoney(minor: number, currency: string): string {
   return new Intl.NumberFormat("en", { style: "currency", currency, maximumFractionDigits: 0 }).format(
     minor / 100,

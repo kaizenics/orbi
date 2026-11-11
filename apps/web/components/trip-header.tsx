@@ -7,7 +7,7 @@ import Link from "next/link";
 import { ApiError } from "@orbi/api/client";
 import { PACES, type CostSummary, type Pace, type TripAggregate, type UpdateTripInput } from "@orbi/core";
 import { useDeleteTrip, type TripActions } from "@/lib/mutations";
-import { formatDateRange, formatMoney } from "@/lib/format";
+import { CURRENCY_OPTIONS, currencySymbol, formatDateRange, formatMoney } from "@/lib/format";
 import { labelClass, parseMoney, textOrNull } from "@/lib/ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +42,7 @@ export function TripHeader({
       name: String(form.get("name")).trim(),
       regionName: textOrNull(form.get("regionName")),
       budgetMinor: parseMoney(form.get("budget")),
+      currency: String(form.get("currency") || trip.currency),
       ...(startDate && endDate
         ? { startDate, endDate }
         : { startDate: null, endDate: null, dayCount: Number(form.get("dayCount") || data.days.length) }),
@@ -176,12 +177,16 @@ export function TripHeader({
                 <Input name="dayCount" type="number" min={1} max={60} defaultValue={data.days.length} />
               </Label>
               <Label className={labelClass}>
-                Budget (₱)
+                Budget ({currencySymbol(trip.currency)})
                 <Input
                   name="budget"
                   inputMode="decimal"
                   defaultValue={trip.budgetMinor === null ? "" : String(trip.budgetMinor / 100)}
                 />
+              </Label>
+              <Label className={`${labelClass} col-span-2`}>
+                Currency
+                <FormSelect name="currency" defaultValue={trip.currency} options={CURRENCY_OPTIONS} />
               </Label>
               <Label className={labelClass}>
                 Day starts

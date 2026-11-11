@@ -11,7 +11,7 @@ import {
 } from "@orbi/core";
 import { buildNavigationLinks } from "@orbi/geo/utils";
 import type { TripActions } from "@/lib/mutations";
-import { formatMinutes, formatMoney } from "@/lib/format";
+import { currencySymbol, formatMinutes, formatMoney } from "@/lib/format";
 import { useFormatters } from "@/lib/preferences";
 import { labelClass, parseMoney, textOrNull } from "@/lib/ui";
 import { Button } from "@/components/ui/button";
@@ -190,7 +190,7 @@ export function StopCard(props: StopCardProps) {
               />
             </Label>
             <Label className={labelClass}>
-              Estimated cost (₱)
+              Estimated cost ({currencySymbol(props.currency)})
               <Input
                 name="cost"
                 inputMode="decimal"

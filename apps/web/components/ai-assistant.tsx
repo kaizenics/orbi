@@ -91,10 +91,14 @@ export function AiAssistant({ data, onPreview }: AiAssistantProps) {
 
   return (
     <section aria-labelledby="ai-heading" className="flex flex-col gap-3 rounded-lg border p-4">
-      <h2 id="ai-heading" className="flex items-center gap-2 text-sm font-medium">
-        <Sparkles aria-hidden className="size-4" /> AI assistant
-        <span className="font-normal text-muted-foreground">· {connection.model}</span>
-      </h2>
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <h2 id="ai-heading" className="flex items-center gap-2 text-sm font-medium whitespace-nowrap">
+          <Sparkles aria-hidden className="size-4 shrink-0" /> AI assistant
+        </h2>
+        <p className="truncate pl-6 text-xs text-muted-foreground" title={connection.model}>
+          {connection.model}
+        </p>
+      </div>
 
       {!proposal ? (
         <form
@@ -118,7 +122,7 @@ export function AiAssistant({ data, onPreview }: AiAssistantProps) {
             placeholder={
               hasStops
                 ? "e.g. Make day 2 less tiring, or add a seafood restaurant near the fort"
-                : "e.g. Historical attractions, local food and a beach day within ₱10,000"
+                : "e.g. Historical attractions, local food and a beach day within my budget"
             }
           />
           <div className="flex flex-wrap items-center gap-2">
