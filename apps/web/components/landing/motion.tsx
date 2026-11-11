@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import Image from "next/image";
 import { motion, useReducedMotion, useScroll, useSpring, useTransform } from "motion/react";
 import { cn } from "@/lib/utils";
 
@@ -110,27 +111,143 @@ export function HeroVisual({ desktop, mobile }: { desktop: React.ReactNode; mobi
   );
 }
 
-/** A bento tile whose picture zooms gently on hover (feedback that the tile is alive). */
-export function Tile({
+export type StackItem = {
+  title: string;
+  body: string;
+  /** Right-hand side of the card, usually a <Shot>. */
+  visual: React.ReactNode;
+  /** Visual tone of the card: dark photo card or light product-shot card. */
+  tone: "dark" | "light";
+};
+
+/**
+ * App screenshot in the site's theme: `/landing/<name>-light.png` and `-dark.png`, one hidden by CSS.
+ * Pass width/height for an intrinsic-size image, or neither to fill the parent.
+ */
+export function Shot({
+  name,
+  alt,
+  sizes,
   className,
-  children,
-  delay = 0,
+  width,
+  height,
+  priority,
 }: {
+  name: string;
+  alt: string;
+  sizes: string;
   className?: string;
-  children: React.ReactNode;
-  delay?: number;
+  width?: number;
+  height?: number;
+  priority?: boolean;
+}) {
+  const size = width && height ? { width, height } : { fill: true };
+  return (
+    <>
+      <Image
+        src={`/landing/${name}-light.png`}
+        alt={alt}
+        sizes={sizes}
+        priority={priority}
+        {...size}
+        className={cn(className, "dark:hidden")}
+      />
+      <Image
+        src={`/landing/${name}-dark.png`}
+        alt={alt}
+        sizes={sizes}
+        priority={priority}
+        {...size}
+        className={cn(className, "hidden dark:block")}
+      />
+    </>
+  );
+}
+
+/**
+ * Scroll-stacked feature cards: each card pins under the header and the next slides over it, while
+ * the ones beneath shrink and dim (depth). Plain stacked cards under reduced motion.
+ */
+export function StackCards({ items }: { items: StackItem[] }) {
+  const ref = useRef<HTMLOListElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
+  return (
+    <ol ref={ref} className="relative flex flex-col gap-8 pb-[10vh]">
+      {items.map((item, i) => (
+        <StackCard key={item.title} item={item} i={i} n={items.length} progress={scrollYProgress} />
+      ))}
+    </ol>
+  );
+}
+
+function StackCard({
+  item,
+  i,
+  n,
+  progress,
+}: {
+  item: StackItem;
+  i: number;
+  n: number;
+  progress: ReturnType<typeof useScroll>["scrollYProgress"];
 }) {
   const reduce = useReducedMotion();
+  const scale = useTransform(progress, [i / n, 1], [1, 1 - (n - 1 - i) * 0.05]);
+  const dim = useTransform(progress, [i / n, 1], [0, (n - 1 - i) * 0.18]);
+  const dark = item.tone === "dark";
+
   return (
-    <motion.article
-      className={cn("group relative overflow-hidden rounded-3xl border", className)}
-      initial={reduce ? false : { opacity: 0, y: 32, scale: 0.98 }}
-      whileInView={{ opacity: 1, y: 0, scale: 1 }}
-      viewport={{ once: true, amount: 0.2 }}
-      transition={{ duration: 0.8, delay, ease: EASE }}
-    >
-      {children}
-    </motion.article>
+    <li className="sticky h-[78dvh] min-h-[30rem]" style={{ top: `calc(6rem + ${i * 1.75}rem)` }}>
+      <motion.article
+        style={reduce ? undefined : { scale }}
+        className={cn(
+          "relative grid h-full origin-top overflow-hidden rounded-[2rem] shadow-[0_-20px_60px_-30px_rgb(0_0_0/0.45)] md:grid-cols-[2fr_3fr]",
+          dark ? "bg-zinc-950 text-zinc-50" : "border bg-card",
+        )}
+      >
+        <div className="relative z-10 flex flex-col justify-between gap-6 p-8 md:p-12">
+          <span
+            className={cn("font-mono text-sm tabular-nums", dark ? "text-zinc-500" : "text-muted-foreground")}
+          >
+            {String(i + 1).padStart(2, "0")} / {String(n).padStart(2, "0")}
+          </span>
+          <div>
+            <h3 className="font-heading text-3xl font-bold tracking-tight text-balance md:text-5xl">
+              {item.title}
+            </h3>
+            <p
+              className={cn(
+                "mt-4 max-w-[38ch] text-base leading-relaxed md:text-lg",
+                dark ? "text-zinc-400" : "text-muted-foreground",
+              )}
+            >
+              {item.body}
+            </p>
+          </div>
+        </div>
+        <div
+          className={cn(
+            "relative min-h-56 overflow-hidden",
+            dark ? "" : "bg-muted md:mt-12 md:ml-4 md:rounded-tl-2xl md:border-t md:border-l",
+          )}
+        >
+          {item.visual}
+          {dark && (
+            <div
+              aria-hidden
+              className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/20 to-transparent max-md:bg-gradient-to-b"
+            />
+          )}
+        </div>
+        {!reduce && (
+          <motion.div
+            aria-hidden
+            style={{ opacity: dim }}
+            className="pointer-events-none absolute inset-0 bg-black"
+          />
+        )}
+      </motion.article>
+    </li>
   );
 }
 

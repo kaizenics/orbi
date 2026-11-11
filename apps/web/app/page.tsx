@@ -1,14 +1,106 @@
-import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, MapPin } from "lucide-react";
 import { APP_NAME } from "@orbi/core";
-import { HeroLines, HeroVisual, PhotoBand, Reveal, Tile } from "@/components/landing/motion";
+import {
+  HeroLines,
+  HeroVisual,
+  PhotoBand,
+  Reveal,
+  Shot,
+  StackCards,
+  type StackItem,
+} from "@/components/landing/motion";
 import { StarCta } from "@/components/landing/star-cta";
 import { Logo } from "@/components/logo";
 import { UserMenu } from "@/components/user-menu";
 import { currentEmail } from "@/lib/session";
 
 const GITHUB = "https://github.com/kaizenics/orbi";
+
+/** The assistant panel as real markup (Tokyo copy), so it stays sharp and follows the theme. */
+function ChatPreview() {
+  return (
+    <div
+      role="img"
+      aria-label="ORBI assistant moving Ueno Park to day 2 and adding a ramen lunch near Senso-ji"
+      className="absolute inset-0 flex flex-col bg-card text-card-foreground"
+    >
+      <div className="flex items-center gap-3 border-b px-6 py-4">
+        <span className="grid size-10 place-items-center rounded-full bg-foreground text-background">
+          <MapPin aria-hidden className="size-5" />
+        </span>
+        <div>
+          <p className="font-semibold">ORBI assistant</p>
+          <p className="text-sm text-muted-foreground">Ask, paste an itinerary, or edit a trip</p>
+        </div>
+      </div>
+      <div className="flex flex-col gap-4 p-6">
+        <p className="ml-auto max-w-[80%] rounded-2xl bg-foreground px-4 py-3 text-background">
+          Make day 1 less tiring and add a ramen lunch near Senso-ji
+        </p>
+        <div className="max-w-[85%] rounded-2xl bg-muted p-4">
+          <p>
+            Updated <strong>Tokyo weekend</strong> (2 changes).
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Moved Ueno Park to day 2 and added lunch at Ichiran Asakusa, a short walk from Senso-ji.
+          </p>
+          <span className="mt-3 inline-flex rounded-lg bg-foreground px-3 py-2 text-sm font-medium text-background">
+            Open trip
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const FEATURES: StackItem[] = [
+  {
+    title: "Every stop on the map",
+    body: "Real road and walking routes between stops, in map or satellite view.",
+    visual: (
+      <Shot
+        name="tokyo-satellite"
+        alt="Satellite view of Asakusa, Tokyo with a day's driving route and four numbered stops"
+        sizes="(min-width: 768px) 60vw, 100vw"
+        className="object-cover object-center"
+      />
+    ),
+    tone: "dark",
+  },
+  {
+    title: "A schedule that adds up",
+    body: "Wake up to dinner, with arrival times worked out from every visit and drive.",
+    visual: (
+      <Shot
+        name="tokyo-timeline"
+        alt="Day 1 in Tokyo: Senso-ji at 09:00, then Ichiran Asakusa at 10:01, with drive times between"
+        sizes="(min-width: 768px) 60vw, 100vw"
+        className="object-cover object-top"
+      />
+    ),
+    tone: "light",
+  },
+  {
+    title: "Plan by chatting",
+    body: "Ask, paste an itinerary, or say what to change. Uses your own AI key.",
+    visual: <ChatPreview />,
+    tone: "light",
+  },
+  {
+    title: "All your trips, at a glance",
+    body: "Countdowns, budgets and clocks for every place you are heading. Private to your account.",
+    visual: (
+      <Shot
+        name="tokyo-dashboard"
+        alt="My Trips dashboard with the Tokyo weekend card, a Tokyo clock and upcoming trips"
+        sizes="(min-width: 768px) 60vw, 100vw"
+        className="object-cover object-left-top"
+      />
+    ),
+    tone: "light",
+  },
+];
 
 const STEPS = [
   { title: "Create a trip", body: "Set the dates, the region and a budget. Days appear ready to fill." },
@@ -90,9 +182,9 @@ export default async function LandingPage() {
 
           <HeroVisual
             desktop={
-              <Image
-                src="/landing/planner-desktop.png"
-                alt="ORBI on desktop: a day in Cebu as a timeline beside its driving route on a map"
+              <Shot
+                name="tokyo-planner-desktop"
+                alt="ORBI on desktop: a day in Tokyo as a timeline beside its driving route on a map"
                 width={1440}
                 height={900}
                 priority
@@ -101,8 +193,8 @@ export default async function LandingPage() {
               />
             }
             mobile={
-              <Image
-                src="/landing/planner-mobile.png"
+              <Shot
+                name="tokyo-planner-mobile"
                 alt="ORBI on a phone: the same day with the map on top and the plan below"
                 width={390}
                 height={844}
@@ -127,84 +219,8 @@ export default async function LandingPage() {
             </h2>
           </Reveal>
 
-          <div className="mt-14 grid gap-5 md:grid-cols-2 lg:grid-cols-3 lg:grid-rows-[auto_auto]">
-            <Tile className="bg-zinc-950 text-zinc-50 lg:row-span-2">
-              <div className="relative aspect-[4/5] lg:aspect-auto lg:h-full">
-                <Image
-                  src="/landing/satellite.png"
-                  alt="Satellite view of Cebu City with a day's route and numbered stops"
-                  fill
-                  sizes="(min-width: 1024px) 33vw, 100vw"
-                  className="object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-7 pt-24">
-                  <h3 className="font-heading text-2xl font-bold">Every stop on the map</h3>
-                  <p className="mt-2 max-w-[34ch] text-sm text-zinc-300">
-                    Real road and walking routes between stops, in map or satellite view.
-                  </p>
-                </div>
-              </div>
-            </Tile>
-
-            <Tile delay={0.08} className="bg-card">
-              <div className="flex h-full flex-col">
-                <div className="p-7 pb-0">
-                  <h3 className="font-heading text-xl font-bold">A schedule that adds up</h3>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Wake up to dinner, with arrival times worked out from every visit and drive.
-                  </p>
-                </div>
-                <div className="relative mt-6 h-64 overflow-hidden">
-                  <Image
-                    src="/landing/timeline.png"
-                    alt="Day timeline with wake up, breakfast and numbered stops with times"
-                    fill
-                    sizes="(min-width: 1024px) 33vw, 100vw"
-                    className="object-cover object-top px-7 transition-transform duration-700 group-hover:-translate-y-6"
-                  />
-                </div>
-              </div>
-            </Tile>
-
-            <Tile delay={0.16} className="bg-muted">
-              <div className="flex h-full flex-col">
-                <div className="p-7 pb-0">
-                  <h3 className="font-heading text-xl font-bold">Plan by chatting</h3>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Ask, paste an itinerary, or say what to change. Uses your own AI key.
-                  </p>
-                </div>
-                <div className="relative mt-6 h-64 overflow-hidden">
-                  <Image
-                    src="/landing/chat.png"
-                    alt="ORBI conversation"
-                    fill
-                    sizes="(min-width: 1024px) 33vw, 100vw"
-                    className="object-cover object-top px-10 transition-transform duration-700 group-hover:-translate-y-4"
-                  />
-                </div>
-              </div>
-            </Tile>
-
-            <Tile delay={0.24} className="bg-card md:col-span-2">
-              <div className="grid h-full items-center gap-6 md:grid-cols-[2fr_3fr]">
-                <div className="p-7">
-                  <h3 className="font-heading text-xl font-bold">All your trips, at a glance</h3>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Countdowns, budgets and clocks for every place you are heading. Private to your account.
-                  </p>
-                </div>
-                <div className="relative h-56 overflow-hidden md:h-full md:min-h-56">
-                  <Image
-                    src="/landing/dashboard.png"
-                    alt="My Trips dashboard with trip cards, timezones and upcoming trips"
-                    fill
-                    sizes="(min-width: 1024px) 45vw, 100vw"
-                    className="object-cover object-left-top transition-transform duration-700 group-hover:scale-[1.03]"
-                  />
-                </div>
-              </div>
-            </Tile>
+          <div className="mt-14">
+            <StackCards items={FEATURES} />
           </div>
         </section>
 
