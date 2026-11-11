@@ -15,14 +15,14 @@ export function SettingsCard({
   children: React.ReactNode;
 }) {
   return (
-    <section aria-label={title} className="overflow-hidden rounded-2xl border bg-card">
-      <h2 className="flex items-center gap-3 border-b bg-muted/60 px-4 py-3 font-semibold">
-        <span className="inline-flex size-8 items-center justify-center rounded-lg border bg-card [&>svg]:size-4">
+    <section aria-labelledby="settings-section" className="flex flex-col gap-4">
+      <h2 id="settings-section" className="flex items-center gap-2.5 text-xl font-semibold tracking-tight">
+        <span aria-hidden className="text-muted-foreground [&>svg]:size-5">
           {icon}
         </span>
         {title}
       </h2>
-      <div className="flex flex-col gap-3 p-4">{children}</div>
+      <div className="divide-y overflow-hidden rounded-2xl border bg-card">{children}</div>
     </section>
   );
 }
@@ -38,10 +38,12 @@ export function SettingRow({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-3 rounded-xl border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
       <div className="min-w-0">
-        <p className="text-sm font-medium">{label}</p>
-        {description ? <div className="text-xs text-muted-foreground">{description}</div> : null}
+        <p className="font-medium">{label}</p>
+        {description ? (
+          <div className="mt-0.5 max-w-prose text-sm text-pretty text-muted-foreground">{description}</div>
+        ) : null}
       </div>
       {children ? <div className="shrink-0">{children}</div> : null}
     </div>
@@ -70,7 +72,11 @@ function Segmented<T extends string>({
       onValueChange={(v) => v && onChange(v as T)}
     >
       {options.map((o) => (
-        <ToggleGroupItem key={o.value} value={o.value} className="px-3">
+        <ToggleGroupItem
+          key={o.value}
+          value={o.value}
+          className="px-3 text-muted-foreground data-[state=on]:bg-foreground data-[state=on]:text-background"
+        >
           {o.label}
         </ToggleGroupItem>
       ))}

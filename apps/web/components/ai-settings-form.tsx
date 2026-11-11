@@ -49,7 +49,7 @@ export function AiSettingsForm() {
   const listingKey = typedKey.trim() || (current?.provider === selected ? current.apiKey : "");
 
   return (
-    <section aria-labelledby="ai-settings-heading" className="flex flex-col gap-4">
+    <section aria-labelledby="ai-settings-heading" className="flex flex-col gap-4 p-5">
       <div>
         <h2 id="ai-settings-heading" className="flex items-center gap-2 font-medium">
           <KeyRound aria-hidden className="size-4" /> AI provider

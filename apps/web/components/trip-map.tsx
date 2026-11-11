@@ -35,7 +35,7 @@ const FIT_PADDING = { top: 64, right: 64, bottom: 160, left: 64 };
 /** Wide screens: stops must not hide under the floating side panels. */
 const fitPadding = () =>
   typeof window !== "undefined" && window.innerWidth >= 1024
-    ? { ...FIT_PADDING, left: 440, right: 400 }
+    ? { ...FIT_PADDING, left: 520, right: 460 }
     : FIT_PADDING;
 
 // Copied to public/vendor by scripts/copy-maplibre-worker.mjs (MapLibre 6 cannot find it once bundled).
@@ -244,7 +244,7 @@ export function TripMap({
       {day ? (
         <div
           role="status"
-          className="pointer-events-none absolute bottom-10 left-4 flex max-w-[calc(100%-2rem)] flex-col gap-1 rounded-lg border bg-card/95 px-4 py-3 text-sm shadow-sm lg:left-[424px]"
+          className="pointer-events-none absolute bottom-10 left-4 flex max-w-[calc(100%-2rem)] flex-col gap-1 rounded-lg border bg-card/95 px-4 py-3 text-sm shadow-sm lg:left-[488px]"
         >
           <span className="flex items-center gap-2 font-medium">
             <span

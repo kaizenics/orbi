@@ -11,6 +11,13 @@
 }
 
 @layer base {
+  /* Native controls (time/date picker icons, scrollbars) follow the app theme, not the OS. */
+  :root {
+    color-scheme: light;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+  }
   h1,
   h2,
   h3 {
@@ -30,10 +37,10 @@
   .with-side .map-style-toggle,
   .with-side .maplibregl-ctrl-top-right,
   .with-side .maplibregl-ctrl-bottom-right {
-    right: 384px;
+    right: 428px;
   }
   .maplibregl-ctrl-bottom-left {
-    left: 424px;
+    left: 488px;
   }
 }
 

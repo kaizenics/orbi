@@ -82,7 +82,7 @@ export function TripsDashboard() {
     .sort((a, b) => a.startDate!.localeCompare(b.startDate!));
 
   return (
-    <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-6 p-4 lg:flex-row lg:p-8">
+    <div className="flex w-full flex-col gap-6 p-4 lg:flex-row lg:px-16 lg:py-10 xl:px-24">
       <section aria-labelledby="my-trips" className="flex min-w-0 flex-1 flex-col gap-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <h1 id="my-trips" className="text-3xl font-bold tracking-tight">
@@ -334,9 +334,9 @@ function TimezonesCard({ trips }: { trips: TripSummary[] }) {
   const cityOf = (zone: string) => zone.split("/").at(-1)!.replace(/_/g, " ");
   const q = search.trim().toLowerCase().replace(/\s+/g, "_");
   const matches = adding
-    ? Intl.supportedValuesOf("timeZone")
-        .filter((z) => !zones.includes(z) && (!q || z.toLowerCase().includes(q)))
-        .slice(0, 50)
+    ? Intl.supportedValuesOf("timeZone").filter(
+        (z) => !zones.includes(z) && (!q || z.toLowerCase().includes(q)),
+      )
     : [];
 
   return (

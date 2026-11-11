@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bell, CloudOff, Map, Plug, Settings, SlidersHorizontal, User } from "lucide-react";
+import { Bell, CloudOff, Map, Plug, SlidersHorizontal, User } from "lucide-react";
 import { AiSettingsForm } from "@/components/ai-settings-form";
 import { TopBar } from "@/components/planner-shell";
 import { GeneralSettings, MapSettings, SettingRow, SettingsCard } from "@/components/settings-panels";
@@ -26,33 +26,25 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   return (
     <div className="flex min-h-dvh flex-col">
       <TopBar />
-      <main className="mx-auto flex w-full max-w-6xl flex-col gap-4 p-4">
-        <header className="flex items-center gap-3 rounded-2xl border bg-muted/60 px-4 py-3">
-          <span className="inline-flex size-10 items-center justify-center rounded-xl border bg-card">
-            <Settings aria-hidden className="size-4" />
-          </span>
-          <div>
-            <h1 className="text-lg font-semibold">Settings</h1>
-            <p className="text-sm text-muted-foreground">Configure your personal settings</p>
-          </div>
+      <main className="mx-auto w-full max-w-5xl px-4 pt-8 pb-16 lg:px-8 lg:pt-14">
+        <header className="mb-8 lg:mb-12">
+          <h1 className="font-heading text-3xl font-bold tracking-tight md:text-4xl">Settings</h1>
+          <p className="mt-2 text-muted-foreground">
+            How ORBI looks, measures and connects for your account.
+          </p>
         </header>
 
-        <div className="flex flex-col gap-4 md:flex-row md:items-start">
-          <nav aria-label="Settings sections" className="rounded-2xl border bg-card p-2 md:w-60 md:shrink-0">
-            <p className="px-2 pt-1 pb-2 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-              Settings
-            </p>
-            <ul className="flex gap-1 overflow-x-auto md:flex-col">
+        <div className="grid gap-8 md:grid-cols-[13rem_1fr] md:gap-12">
+          <nav aria-label="Settings sections" className="md:sticky md:top-20 md:self-start">
+            <ul className="-mx-4 flex gap-1 overflow-x-auto px-4 md:mx-0 md:flex-col md:px-0">
               {SECTIONS.map((s) => (
                 <li key={s.id} className="shrink-0">
                   <Link
                     href={`/settings?tab=${s.id}`}
                     aria-current={s.id === active.id ? "page" : undefined}
-                    className="flex items-center gap-3 rounded-xl border border-transparent px-2 py-2 text-sm hover:bg-muted aria-[current=page]:border-border aria-[current=page]:bg-background aria-[current=page]:font-medium [&_svg]:size-4"
+                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none aria-[current=page]:bg-muted aria-[current=page]:font-medium aria-[current=page]:text-foreground [&_svg]:size-4"
                   >
-                    <span className="inline-flex size-7 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                      {s.icon}
-                    </span>
+                    {s.icon}
                     {s.label}
                   </Link>
                 </li>
@@ -60,7 +52,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             </ul>
           </nav>
 
-          <div className="flex min-w-0 flex-1 flex-col gap-4">
+          <div className="min-w-0">
             <SettingsCard icon={active.icon} title={active.label}>
               <Section id={active.id} />
             </SettingsCard>

@@ -7,7 +7,7 @@ import { UserMenu } from "./user-menu";
 import { Logo } from "@/components/logo";
 
 const floating =
-  "flex flex-col gap-6 bg-card p-5 *:shrink-0 lg:absolute lg:top-3 lg:bottom-3 lg:z-10 lg:overflow-y-auto lg:rounded-2xl lg:border lg:shadow-lg";
+  "flex flex-col gap-6 bg-card p-5 *:shrink-0 lg:absolute lg:top-10 lg:bottom-10 lg:z-10 lg:overflow-y-auto lg:rounded-2xl lg:border lg:shadow-lg";
 
 /**
  * Top bar over a full-screen map with floating panels: the plan on the left and, optionally,
@@ -31,11 +31,11 @@ export function PlannerShell({
         <section aria-label="Map" className="relative h-[50vh] bg-muted lg:absolute lg:inset-0 lg:h-auto">
           {map}
         </section>
-        <aside aria-label="Plan" className={`${floating} border-b lg:left-3 lg:w-[400px]`}>
+        <aside aria-label="Plan" className={`${floating} border-b lg:left-10 lg:w-[440px]`}>
           {panel}
         </aside>
         {side ? (
-          <aside aria-label="Places and AI" className={`${floating} lg:right-3 lg:w-[360px]`}>
+          <aside aria-label="Places and AI" className={`${floating} lg:right-10 lg:w-[380px]`}>
             {side}
           </aside>
         ) : null}
